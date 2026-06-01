@@ -5,25 +5,6 @@ import pLimit from "p-limit";
 import { createInterface } from "readline";
 import { stdin, stdout } from "process";
 
-const supportedExts = [".pdf", ".docx", ".doc", ".pptx", ".ppt", ".xlsx", ".xls", ".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp"];
-
-async function walkDir(dir) {
-  const entries = await fs.readdir(dir, { withFileTypes: true });
-  const files = [];
-  for (const entry of entries) {
-    const fullPath = path.join(dir, entry.name);
-    if (entry.isDirectory()) {
-      files.push(...await walkDir(fullPath));
-    } else {
-      const ext = path.extname(entry.name).toLowerCase();
-      if (supportedExts.includes(ext)) {
-        files.push(fullPath);
-      }
-    }
-  }
-  return files;
-}
-
 // NOTE: the format->extension mapping here must stay in sync with the format->content branches in processFile.
 function getOutputPath(filePath, outDir, format) {
   const ext = path.extname(filePath).toLowerCase();
@@ -92,14 +73,13 @@ async function processFile(parser, filePath, outDir, format) {
 }
 
 async function run(config) {
-  const { inputDir, outputDir, format, ocrEnabled = true, ocrLanguage = "eng", workers = 4 } = config;
+  const { inputDir, files, outputDir, format, ocrEnabled = true, ocrLanguage = "eng", workers = 4 } = config;
 
   try {
     const concurrency = Math.max(1, Number(workers) || 4);
     const parser = new LiteParse({ ocrEnabled, ocrLanguage });
 
     await fs.mkdir(outputDir, { recursive: true });
-    const files = await walkDir(inputDir);
     const limit = pLimit(concurrency);
 
     // Emit start event with total file count

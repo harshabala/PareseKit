@@ -58,6 +58,8 @@ fn trigger_haptic() -> Result<(), String> {
     Ok(())
 }
 
+// Canonical list of supported file extensions — single source of truth used for both
+// the preview file count (scan_directory) and the actual parse file set passed to the sidecar.
 const SUPPORTED_EXTENSIONS: &[&str] = &[
     "pdf", "docx", "doc", "pptx", "ppt", "xlsx", "xls", "png", "jpg", "jpeg", "tiff", "tif", "bmp",
 ];

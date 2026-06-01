@@ -95,8 +95,17 @@ import { MAX_RECENT_BATCHES } from "./lib/types";
     errorMsg = null;
 
     try {
+      // Re-scan at parse time (folder may have changed since selection).
+      // Rust scan_directory is the single source of truth for supported extensions.
+      const filesToParse = await invoke<string[]>("scan_directory", { path: inputDir });
+      if (filesToParse.length === 0) {
+        isParsing = false;
+        return;
+      }
+
       await runParse({
         inputDir,
+        files: filesToParse,
         outputDir,
         format,
         ocrEnabled,

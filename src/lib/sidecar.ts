@@ -2,6 +2,7 @@ import { Command } from "@tauri-apps/plugin-shell";
 
 export interface ParseConfig {
   inputDir: string;
+  files: string[];
   outputDir: string;
   format: "md" | "json" | "txt";
   ocrEnabled?: boolean;
