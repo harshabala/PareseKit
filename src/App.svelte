@@ -215,7 +215,11 @@ import { MAX_RECENT_BATCHES } from "./lib/types";
       <div class="card">
         <FolderPicker label="Input Folder" value={inputDir} onSelect={handleInputSelect} />
         {#if inputFileCount !== null}
-          <div class="file-count-preview">{inputFileCount} file{inputFileCount !== 1 ? "s" : ""} found</div>
+          {#if inputFileCount === 0}
+            <div class="file-count-preview">No supported documents in this folder.</div>
+          {:else}
+            <div class="file-count-preview">{inputFileCount} file{inputFileCount !== 1 ? "s" : ""} found</div>
+          {/if}
         {/if}
         <FolderPicker label="Output Folder" value={outputDir} onSelect={handleOutputSelect} />
 
@@ -223,6 +227,7 @@ import { MAX_RECENT_BATCHES } from "./lib/types";
           <span>Format</span>
           <FormatSelector value={format} onChange={handleFormatChange} />
         </div>
+        <div class="file-count-preview" style="margin-top: -4px;">Spreadsheets always export as JSON.</div>
 
         <div class="row">
           <div style="display: flex; align-items: center; gap: 8px;">
@@ -277,7 +282,7 @@ import { MAX_RECENT_BATCHES } from "./lib/types";
 
     <div class="section" style="margin-top: auto;">
       <button
-        disabled={isParsing || !inputDir || !outputDir}
+        disabled={isParsing || !inputDir || !outputDir || inputFileCount === 0}
         onclick={startParse}
         style="width: 100%; height: 36px; font-size: 14px;"
       >

@@ -24,32 +24,57 @@ async function walkDir(dir) {
   return files;
 }
 
+function getOutputPath(filePath, outDir, format) {
+  const ext = path.extname(filePath).toLowerCase();
+  const baseName = path.basename(filePath, ext);
+  const isExcel = [".xlsx", ".xls"].includes(ext);
+  let outExt;
+  if (isExcel) {
+    outExt = ".json";
+  } else if (format === "json") {
+    outExt = ".json";
+  } else if (format === "txt") {
+    outExt = ".txt";
+  } else {
+    outExt = ".md";
+  }
+  return path.join(outDir, baseName + outExt);
+}
+
 async function processFile(parser, filePath, outDir, format) {
-  stdout.write(JSON.stringify({ type: "progress", file: path.basename(filePath), status: "parsing" }) + "\n");
+  const fileName = path.basename(filePath);
+  const outPath = getOutputPath(filePath, outDir, format);
+
+  // Skip if output already exists for this format
+  try {
+    await fs.access(outPath);
+    stdout.write(JSON.stringify({ type: "progress", file: fileName, status: "skipped", path: outPath }) + "\n");
+    return "skipped";
+  } catch {
+    // File does not exist — proceed with parsing
+  }
+
+  stdout.write(JSON.stringify({ type: "progress", file: fileName, status: "parsing" }) + "\n");
 
   const ext = path.extname(filePath).toLowerCase();
   const baseName = path.basename(filePath, ext);
-
   const isExcel = [".xlsx", ".xls"].includes(ext);
+
   // LiteParse takes OCR config in the constructor; the second parse() arg is `quiet`.
   const result = await parser.parse(filePath, true);
 
   let outputContent = "";
-  let outExt = ".md";
 
   if (isExcel) {
     outputContent = JSON.stringify(result, null, 2);
-    outExt = ".json";
   } else if (format === "json") {
     outputContent = JSON.stringify(result, null, 2);
-    outExt = ".json";
   } else if (format === "txt") {
     if (result.pages) {
       outputContent = result.pages.map(p => p.text).join("\n\n---\n\n");
     } else {
       outputContent = JSON.stringify(result, null, 2);
     }
-    outExt = ".txt";
   } else {
     if (result.pages) {
       const pages = result.pages.map((p, i) => `## Page ${i + 1}\n\n${p.text}`);
@@ -57,13 +82,11 @@ async function processFile(parser, filePath, outDir, format) {
     } else {
       outputContent = `# ${baseName}\n\n${JSON.stringify(result, null, 2)}`;
     }
-    outExt = ".md";
   }
 
-  const outPath = path.join(outDir, baseName + outExt);
   await fs.writeFile(outPath, outputContent);
 
-  stdout.write(JSON.stringify({ type: "progress", file: path.basename(filePath), status: "completed", path: outPath }) + "\n");
+  stdout.write(JSON.stringify({ type: "progress", file: fileName, status: "completed", path: outPath }) + "\n");
 
   return "completed";
 }
@@ -83,13 +106,18 @@ async function run(config) {
     stdout.write(JSON.stringify({ type: "start", total: files.length }) + "\n");
 
     let parsed = 0;
+    let skipped = 0;
     let errors = 0;
 
     const tasks = files.map(filePath =>
       limit(async () => {
         try {
-          await processFile(parser, filePath, outputDir, format);
-          parsed++;
+          const result = await processFile(parser, filePath, outputDir, format);
+          if (result === "skipped") {
+            skipped++;
+          } else {
+            parsed++;
+          }
         } catch (error) {
           errors++;
           stdout.write(JSON.stringify({ type: "progress", file: path.basename(filePath), status: "error", error: error.message }) + "\n");
@@ -98,7 +126,7 @@ async function run(config) {
     );
 
     await Promise.all(tasks);
-    stdout.write(JSON.stringify({ type: "done", parsed, skipped: files.length - parsed - errors, errors }) + "\n");
+    stdout.write(JSON.stringify({ type: "done", parsed, skipped, errors }) + "\n");
   } catch (error) {
     stdout.write(JSON.stringify({ type: "error", message: error.message }) + "\n");
   }
