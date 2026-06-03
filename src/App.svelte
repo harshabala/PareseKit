@@ -7,7 +7,14 @@
   import { runParse, type ParseEvent } from "./lib/sidecar";
   import type { OutputFormat, FileProgress, BatchResult, ThemeMode } from "./lib/types";
   import { MAX_RECENT_BATCHES } from "./lib/types";
-  import { initLocale, locale, t, type AppLocale } from "./lib/i18n";
+  import {
+    initLocale,
+    locale,
+    localeFromLegacyOcr,
+    normalizeLocale,
+    t,
+    type AppLocale,
+  } from "./lib/i18n";
   import {
     isKnownOcrLanguage,
     normalizeOcrLanguage,
@@ -104,6 +111,13 @@
   onMount(async () => {
     theme = normalizeThemeMode(await getSetting("theme", DEFAULT_THEME));
     applyTheme(theme);
+
+    const savedLocale = await getSetting<AppLocale | null>("locale", null);
+    const resolvedLocale = savedLocale
+      ? normalizeLocale(savedLocale)
+      : localeFromLegacyOcr(await getSetting("ocrLanguage", "eng"));
+    initLocale(resolvedLocale);
+    await setSetting("locale", resolvedLocale);
 
     outputDir = await getSetting("outputDir", "");
     if (!outputDir) {

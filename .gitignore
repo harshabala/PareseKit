@@ -9,3 +9,5 @@ src-tauri/gen/
 *.css.bak
 *.log
 .env
+src-tauri/com.parsedock.app
+src-tauri/*.app

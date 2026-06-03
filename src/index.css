@@ -9,14 +9,14 @@
   --accent-color: oklch(0.32 0.03 50);
   --accent-color-hover: oklch(0.26 0.035 50);
   --accent-fg: oklch(0.98 0.005 85);
-  --border-color: oklch(0.88 0.008 85 / 0.85);
-  --glass-bg: oklch(0.98 0.005 85 / 0.98);
+  --border-color: oklch(0.72 0.02 50 / 0.95);
+  --glass-bg: oklch(0.97 0.01 85 / 1);
   --glass-blur: blur(20px);
-  --secondary-bg: oklch(0.94 0.005 85 / 0.9);
+  --secondary-bg: oklch(0.92 0.012 85 / 0.95);
   --gradient-bg: linear-gradient(
     145deg,
-    oklch(0.98 0.005 85) 0%,
-    oklch(0.95 0.012 95) 100%
+    oklch(0.96 0.015 85) 0%,
+    oklch(0.91 0.025 95) 100%
   );
 
   --status-success: oklch(0.55 0.14 145);
@@ -24,8 +24,8 @@
   --status-warning: oklch(0.62 0.14 70);
   --status-info: oklch(0.52 0.08 50);
 
-  --shadow-color: oklch(0.18 0.01 50 / 0.08);
-  --shadow-color-strong: oklch(0.18 0.01 50 / 0.14);
+  --shadow-color: oklch(0.18 0.01 50 / 0.18);
+  --shadow-color-strong: oklch(0.18 0.01 50 / 0.32);
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
@@ -132,6 +132,7 @@ body {
   height: 480px;
   min-height: 480px;
   background: var(--gradient-bg), var(--glass-bg);
+  background-color: var(--glass-bg);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   border-radius: 12px;

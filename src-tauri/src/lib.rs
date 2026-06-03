@@ -1,3 +1,4 @@
+pub mod macos_popover;
 pub mod sidecar_helpers;
 
 use std::path::Path;
@@ -5,67 +6,18 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
-use tauri::tray::{MouseButtonState, TrayIconBuilder, TrayIconEvent, TrayIconId};
-use tauri::{AppHandle, Manager, PhysicalPosition, Position, Runtime, Size, State, WebviewWindow};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent, TrayIconId};
+use tauri::{AppHandle, Manager, PhysicalPosition, Position, Rect, Runtime, Size, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use walkdir::WalkDir;
 
-/// Ignore focus-loss hides briefly after opening so tray mouse-up does not collapse the panel.
-const POPOVER_SHOW_GRACE_MS: u64 = 500;
 const TRAY_ICON: tauri::image::Image<'static> = tauri::include_image!("icons/tray/icon.png");
-
-fn show_popover<R: Runtime>(app: &AppHandle<R>, window: &WebviewWindow<R>) {
-    if let Some(state) = app.try_state::<PopoverState>() {
-        state.mark_opening();
-    }
-    let _ = window.show();
-    let _ = window.set_focus();
-}
-
-fn toggle_popover<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) {
-    let is_visible = window.is_visible().unwrap_or(false);
-    if is_visible {
-        let _ = window.hide();
-        return;
-    }
-    show_popover(&app, &window);
-}
-
-#[derive(Clone)]
-struct TrayMenuState {
-    tray_id: TrayIconId,
-}
-
-fn build_tray_menu<R: Runtime>(
-    app: &AppHandle<R>,
-    open_label: &str,
-    quit_label: &str,
-) -> tauri::Result<Menu<R>> {
-    let open_item = MenuItem::with_id(app, "open_parsedock", open_label, true, None::<&str>)?;
-    let separator = PredefinedMenuItem::separator(app)?;
-    let quit_item = PredefinedMenuItem::quit(app, Some(quit_label))?;
-    Menu::with_items(app, &[&open_item, &separator, &quit_item])
-}
-
-#[tauri::command]
-fn update_tray_menu_labels(
-    app: AppHandle,
-    tray_state: State<TrayMenuState>,
-    open_label: String,
-    quit_label: String,
-) -> Result<(), String> {
-    let menu = build_tray_menu(&app, &open_label, &quit_label).map_err(|e| e.to_string())?;
-    app.tray_by_id(&tray_state.tray_id)
-        .ok_or_else(|| "Tray icon not found".to_string())?
-        .set_menu(Some(menu))
-        .map_err(|e| e.to_string())?;
-    Ok(())
-}
+/// Ignore focus-loss hides briefly after opening so tray mouse-up does not collapse the panel.
+const POPOVER_SHOW_GRACE_MS: u64 = 400;
 
 #[derive(Clone)]
 struct PopoverState {
     last_opened_at: Arc<Mutex<Option<Instant>>>,
-    /// While a native file picker is open, do not auto-hide the popover on focus loss.
     picker_active: Arc<AtomicBool>,
 }
 
@@ -104,6 +56,150 @@ impl PopoverState {
     }
 }
 
+#[derive(Clone)]
+struct TrayMenuState {
+    tray_id: TrayIconId,
+    open_label: Arc<Mutex<String>>,
+    quit_label: Arc<Mutex<String>>,
+}
+
+fn build_tray_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    open_label: &str,
+    quit_label: &str,
+) -> tauri::Result<Menu<R>> {
+    let open_item = MenuItem::with_id(app, "open_parsedock", open_label, true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+    let quit_item = PredefinedMenuItem::quit(app, Some(quit_label))?;
+    Menu::with_items(app, &[&open_item, &separator, &quit_item])
+}
+
+fn popup_tray_menu<R: Runtime>(app: &AppHandle<R>, tray_state: &TrayMenuState) -> Result<(), String> {
+    let open_label = tray_state
+        .open_label
+        .lock()
+        .map_err(|e| e.to_string())?;
+    let quit_label = tray_state
+        .quit_label
+        .lock()
+        .map_err(|e| e.to_string())?;
+    let menu = build_tray_menu(app, &open_label, &quit_label).map_err(|e| e.to_string())?;
+    let window = app
+        .get_webview_window("main")
+        .ok_or_else(|| "Main window not found".to_string())?;
+    window.popup_menu(&menu).map_err(|e| e.to_string())
+}
+
+fn position_popover_under_tray<R: Runtime>(window: &WebviewWindow<R>, rect: &Rect) -> bool {
+    let Ok(win_size) = window.outer_size() else {
+        return false;
+    };
+    let scale = window.scale_factor().unwrap_or(1.0);
+
+    let icon_x = match rect.position {
+        Position::Physical(p) => p.x as f64,
+        Position::Logical(p) => p.x * scale,
+    };
+    let icon_y = match rect.position {
+        Position::Physical(p) => p.y as f64,
+        Position::Logical(p) => p.y * scale,
+    };
+    let icon_w = match rect.size {
+        Size::Physical(s) => s.width as f64,
+        Size::Logical(s) => s.width * scale,
+    };
+    let icon_h = match rect.size {
+        Size::Physical(s) => s.height as f64,
+        Size::Logical(s) => s.height * scale,
+    };
+    let win_w = win_size.width as f64;
+    let win_h = win_size.height as f64;
+
+    let (monitor_width, monitor_height) = window
+        .current_monitor()
+        .ok()
+        .flatten()
+        .map(|m| (m.size().width as f64, m.size().height as f64))
+        .unwrap_or((f64::MAX, f64::MAX));
+
+    let x = (icon_x + icon_w / 2.0 - win_w / 2.0)
+        .max(0.0)
+        .min(monitor_width - win_w) as i32;
+    let y = (icon_y + icon_h) as i32;
+
+    // Reject coordinates that would place the window off-screen (bad tray rect).
+    if y < 0 || y as f64 > monitor_height - 80.0 || x < -win_w as i32 / 2 {
+        return false;
+    }
+
+    let _ = window.set_position(PhysicalPosition::new(x, y));
+    let _ = win_h; // keep height available for future vertical clamping
+    true
+}
+
+fn show_popover<R: Runtime>(
+    window: &WebviewWindow<R>,
+    rect: Option<&Rect>,
+    popover: &PopoverState,
+) {
+    popover.mark_opening();
+
+    // Center first so the panel is on-screen even if tray coordinates are wrong.
+    let _ = window.center();
+    if let Some(r) = rect {
+        let _ = position_popover_under_tray(window, r);
+    }
+
+    macos_popover::activate_app_for_popover(window);
+}
+
+fn hide_popover<R: Runtime>(window: &WebviewWindow<R>) {
+    let _ = window.hide();
+}
+
+fn toggle_popover_from_tray<R: Runtime>(
+    window: &WebviewWindow<R>,
+    rect: &Rect,
+    popover: &PopoverState,
+) {
+    if window.is_visible().unwrap_or(false) {
+        hide_popover(window);
+    } else {
+        show_popover(window, Some(rect), popover);
+    }
+}
+
+fn open_popover_from_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    window: &WebviewWindow<R>,
+    tray_state: &TrayMenuState,
+    popover: &PopoverState,
+) {
+    let rect = app
+        .tray_by_id(&tray_state.tray_id)
+        .and_then(|t| t.rect().ok().flatten());
+    show_popover(window, rect.as_ref(), popover);
+}
+
+#[tauri::command]
+fn update_tray_menu_labels(
+    tray_state: State<TrayMenuState>,
+    open_label: String,
+    quit_label: String,
+) -> Result<(), String> {
+    // Only update labels — never call tray.set_menu(), which re-attaches the menu to
+    // NSStatusItem and causes macOS to swallow left-clicks.
+    *tray_state
+        .open_label
+        .lock()
+        .map_err(|e| e.to_string())? = open_label;
+    *tray_state
+        .quit_label
+        .lock()
+        .map_err(|e| e.to_string())? = quit_label;
+    Ok(())
+}
+
 #[cfg(target_os = "macos")]
 fn elevate_app_for_file_dialog<R: Runtime>(app: &AppHandle<R>) {
     let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
@@ -133,9 +229,17 @@ fn run_file_picker<R: Runtime, F: FnOnce(&AppHandle<R>) -> Option<Vec<String>>>(
 
     let result = pick(&app);
 
-    #[cfg(target_os = "macos")]
-    restore_accessory_app_policy(&app);
     popover.end_picker();
+    #[cfg(target_os = "macos")]
+    {
+        let popover_still_open = app
+            .get_webview_window("main")
+            .map(|w| w.is_visible().unwrap_or(false))
+            .unwrap_or(false);
+        if !popover_still_open {
+            restore_accessory_app_policy(&app);
+        }
+    }
     Ok(result)
 }
 
@@ -315,107 +419,83 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            app.manage(PopoverState::new());
+            let popover_state = PopoverState::new();
+            app.manage(popover_state.clone());
 
-            let window = app.get_webview_window("main").unwrap();
-
+            let window = app.get_webview_window("main").expect("main window");
             let w = window.clone();
-            let popover_state = app.state::<PopoverState>().inner().clone();
+            let popover_for_events = popover_state.clone();
             window.on_window_event(move |event| {
                 if let tauri::WindowEvent::Focused(false) = event {
-                    if popover_state.should_hide_on_focus_loss() {
-                        let _ = w.hide();
+                    if popover_for_events.should_hide_on_focus_loss() {
+                        hide_popover(&w);
                     }
                 }
             });
 
-            let tray_menu = build_tray_menu(app.handle(), "Open ParseDock", "Quit ParseDock")?;
-
-            let tray = TrayIconBuilder::new()
+            let _tray = TrayIconBuilder::new()
                 .icon(TRAY_ICON)
                 .icon_as_template(true)
                 .tooltip("ParseDock")
-                .menu(&tray_menu)
-                .show_menu_on_left_click(false)
-                .on_menu_event(|tray, event| {
+                // Do NOT attach .menu() — macOS captures left-clicks for the status item menu.
+                .on_menu_event(|app, event| {
                     if event.id().as_ref() == "open_parsedock" {
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            show_popover(&app, &window);
+                        if let (Some(window), Some(tray_state), Some(popover)) = (
+                            app.get_webview_window("main"),
+                            app.try_state::<TrayMenuState>(),
+                            app.try_state::<PopoverState>(),
+                        ) {
+                            open_popover_from_menu(
+                                &app,
+                                &window,
+                                tray_state.inner(),
+                                popover.inner(),
+                            );
                         }
                     }
                 })
-                .on_tray_icon_event(|tray, event| {
-                    // tray-icon emits Click on mouse-down and mouse-up; only act on release
-                    // so a single click opens the panel instead of open-on-down/close-on-up.
-                    if let TrayIconEvent::Click {
-                        rect,
-                        button_state,
-                        ..
-                    } = event
-                    {
-                        if button_state != MouseButtonState::Up {
-                            return;
-                        }
-                        let app = tray.app_handle();
-                        if let Some(window) = app.get_webview_window("main") {
-                            let is_visible = window.is_visible().unwrap_or(false);
-                            if is_visible {
-                                toggle_popover(app.clone(), window);
-                            } else {
-                                // Position the popover window just below the tray icon,
-                                // horizontally centered on it.
-                                if let Ok(win_size) = window.outer_size() {
-                                    // Scale factor for converting logical → physical pixels.
-                                    let scale = window.scale_factor().unwrap_or(1.0);
+                .on_tray_icon_event({
+                    let popover = popover_state.clone();
+                    move |tray, event| {
+                    let app = tray.app_handle();
+                    let Some(tray_state) = app.try_state::<TrayMenuState>() else {
+                        return;
+                    };
+                    let tray_state = tray_state.inner().clone();
 
-                                    // Resolve icon rect to physical pixels.
-                                    // Tray icon positions are already in screen physical coords.
-                                    let icon_x = match rect.position {
-                                        Position::Physical(p) => p.x as f64,
-                                        Position::Logical(p) => p.x * scale,
-                                    };
-                                    let icon_y = match rect.position {
-                                        Position::Physical(p) => p.y as f64,
-                                        Position::Logical(p) => p.y * scale,
-                                    };
-                                    let icon_w = match rect.size {
-                                        Size::Physical(s) => s.width as f64,
-                                        Size::Logical(s) => s.width * scale,
-                                    };
-                                    let icon_h = match rect.size {
-                                        Size::Physical(s) => s.height as f64,
-                                        Size::Logical(s) => s.height * scale,
-                                    };
-                                    let win_w = win_size.width as f64;
-
-                                    // Monitor width for right-edge clamping (physical px).
-                                    let monitor_width = window
-                                        .current_monitor()
-                                        .ok()
-                                        .flatten()
-                                        .map(|m| m.size().width as f64)
-                                        .unwrap_or(f64::MAX);
-
-                                    // Center window horizontally under the icon, clamp to avoid
-                                    // going off either edge of the screen.
-                                    let x = (icon_x + icon_w / 2.0 - win_w / 2.0)
-                                        .max(0.0)
-                                        .min(monitor_width - win_w)
-                                        as i32;
-                                    let y = (icon_y + icon_h) as i32;
-
-                                    let _ = window.set_position(PhysicalPosition::new(x, y));
+                    match event {
+                        TrayIconEvent::Click {
+                            rect,
+                            button,
+                            button_state,
+                            ..
+                        } => {
+                            if button_state != MouseButtonState::Up {
+                                return;
+                            }
+                            let Some(window) = app.get_webview_window("main") else {
+                                return;
+                            };
+                            match button {
+                                MouseButton::Left => {
+                                    toggle_popover_from_tray(&window, &rect, &popover);
                                 }
-                                toggle_popover(app.clone(), window);
+                                MouseButton::Right => {
+                                    let _ = popup_tray_menu(&app, &tray_state);
+                                }
+                                _ => {}
                             }
                         }
+                        _ => {}
                     }
+                }
                 })
                 .build(app)?;
 
             app.manage(TrayMenuState {
-                tray_id: tray.id().clone(),
+                tray_id: _tray.id().clone(),
+                open_label: Arc::new(Mutex::new("Open ParseDock".to_string())),
+                quit_label: Arc::new(Mutex::new("Quit ParseDock".to_string())),
             });
 
             Ok(())
