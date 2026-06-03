@@ -5,5 +5,7 @@ sidecar/node_modules/
 src-tauri/binaries/
 src-tauri/gen/
 .DS_Store
+.brand-preview/
+*.css.bak
 *.log
 .env
