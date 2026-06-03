@@ -105,7 +105,7 @@
   }
 </script>
 
-<div id="app">
+<div class="app">
   <header>
     <span>ParseDock</span>
   </header>

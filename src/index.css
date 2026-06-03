@@ -37,7 +37,7 @@ body {
   overflow: hidden;
 }
 
-#app {
+.app {
   width: 320px;
   height: 480px;
   background: var(--glass-bg);
