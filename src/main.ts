@@ -1,29 +1,26 @@
+import "./index.css";
 import { mount } from "svelte";
 import App from "./App.svelte";
-import {
-  initLocale,
-  localeFromLegacyOcr,
-  normalizeLocale,
-} from "./lib/i18n";
-import { getSetting } from "./lib/store";
-import { applyTheme, DEFAULT_THEME, normalizeThemeMode } from "./lib/theme";
+import { applyTheme, DEFAULT_THEME } from "./lib/theme";
 
-void Promise.all([
-  getSetting("theme", DEFAULT_THEME).then((saved) => {
-    applyTheme(normalizeThemeMode(saved));
-  }),
-  getSetting("locale", null).then(async (saved) => {
-    if (saved !== null) {
-      initLocale(normalizeLocale(saved));
-      return;
+function bootstrap() {
+  applyTheme(DEFAULT_THEME);
+  try {
+    const target = document.getElementById("app");
+    if (!target) throw new Error("Mount target #app not found");
+    const app = mount(App, { target });
+    document.getElementById("boot-fallback")?.remove();
+    console.info("[ParseDock] UI mounted");
+    return app;
+  } catch (error) {
+    console.error("[ParseDock] UI bootstrap failed:", error);
+    const fallback = document.getElementById("boot-fallback");
+    if (fallback) {
+      fallback.textContent = `ParseDock failed to load: ${error instanceof Error ? error.message : String(error)}`;
+      fallback.setAttribute("role", "alert");
+      fallback.style.cssText = "color: #c0392b; font-size: 12px;";
     }
-    const legacyOcr = await getSetting("ocrLanguage", "eng");
-    initLocale(localeFromLegacyOcr(String(legacyOcr)));
-  }),
-]);
+  }
+}
 
-const app = mount(App, {
-  target: document.getElementById("app")!,
-});
-
-export default app;
+bootstrap();
