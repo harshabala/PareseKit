@@ -9,12 +9,12 @@
   import { MAX_RECENT_BATCHES } from "./lib/types";
   import {
     initLocale,
-    locale,
+    getLocale,
     localeFromLegacyOcr,
     normalizeLocale,
     t,
     type AppLocale,
-  } from "./lib/i18n";
+  } from "./lib/i18n.svelte";
   import {
     isKnownOcrLanguage,
     normalizeOcrLanguage,
@@ -467,7 +467,7 @@
 
   {#if showSettings}
     <SettingsScreen
-      locale={locale}
+      locale={getLocale()}
       {ocrLanguage}
       {ocrEnabled}
       {theme}

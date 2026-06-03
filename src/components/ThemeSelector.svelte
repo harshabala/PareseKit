@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from "../lib/i18n";
+  import { t } from "../lib/i18n.svelte";
   import type { ThemeMode } from "../lib/types";
 
   let { value, onChange }: { value: ThemeMode; onChange: (mode: ThemeMode) => void } = $props();

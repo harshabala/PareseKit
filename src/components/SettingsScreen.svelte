@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { AppLocale } from "../lib/i18n";
-  import { t } from "../lib/i18n";
+  import type { AppLocale } from "../lib/i18n.svelte";
+  import { t } from "../lib/i18n.svelte";
   import type { OcrLanguageCode } from "../lib/ocrLanguages";
   import type { ThemeMode } from "../lib/types";
   import LanguageSelector from "./LanguageSelector.svelte";

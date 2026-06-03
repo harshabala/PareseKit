@@ -1,6 +1,6 @@
 <script lang="ts">
   import { OCR_LANGUAGES, type OcrLanguageCode } from "../lib/ocrLanguages";
-  import { t } from "../lib/i18n";
+  import { t } from "../lib/i18n.svelte";
 
   let {
     value,

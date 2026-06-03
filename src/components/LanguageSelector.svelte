@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { AppLocale } from "../lib/i18n";
-  import { SUPPORTED_LOCALES, t } from "../lib/i18n";
+  import type { AppLocale } from "../lib/i18n.svelte";
+  import { SUPPORTED_LOCALES, t } from "../lib/i18n.svelte";
 
   let { value, onChange }: { value: AppLocale; onChange: (code: AppLocale) => void } = $props();
 </script>

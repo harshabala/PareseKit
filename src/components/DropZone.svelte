@@ -2,7 +2,7 @@
   import { onMount } from "svelte";
   import { invoke } from "@tauri-apps/api/core";
   import { getCurrentWindow } from "@tauri-apps/api/window";
-  import { t } from "../lib/i18n";
+  import { t } from "../lib/i18n.svelte";
   import { pickInputFiles, pickInputFolder } from "../lib/picker";
   import { filterSupportedPaths, isSupportedFilePath } from "../lib/supportedExtensions";
 

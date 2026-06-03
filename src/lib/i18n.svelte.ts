@@ -8,7 +8,13 @@ export const SUPPORTED_LOCALES: readonly AppLocale[] = ["en", "zh", "es"];
 
 const catalogs: Record<AppLocale, Record<string, unknown>> = { en, zh, es };
 
-export let locale = $state<AppLocale>("en");
+// Module-private reactive state. Svelte 5 forbids exporting a reassigned $state,
+// so callers read it through getLocale() (reactive) and mutate it via initLocale().
+let localeValue = $state<AppLocale>("en");
+
+export function getLocale(): AppLocale {
+  return localeValue;
+}
 
 export function normalizeLocale(value: unknown): AppLocale {
   if (value === "zh" || value === "es" || value === "en") {
@@ -48,7 +54,7 @@ export function t(
   key: string,
   vars?: Record<string, string | number>
 ): string {
-  const active = locale;
+  const active = localeValue;
   let text =
     lookup(catalogs[active], key) ??
     lookup(catalogs.en, key) ??
@@ -63,6 +69,6 @@ export function t(
 }
 
 export function initLocale(code: AppLocale) {
-  locale = code;
+  localeValue = code;
   applyDocumentLocale(code);
 }

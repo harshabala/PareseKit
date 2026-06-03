@@ -2,12 +2,12 @@ pub mod macos_popover;
 pub mod popover_trace;
 pub mod sidecar_helpers;
 
-use popover_trace::{trace as popover_trace, tray_guard_trace};
+use popover_trace::trace as popover_trace;
 
 pub use popover_trace::startup_trace;
 
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
@@ -20,7 +20,8 @@ use walkdir::WalkDir;
 
 const TRAY_ICON: tauri::image::Image<'static> = tauri::include_image!("icons/tray/icon@2x.png");
 /// Ignore focus-loss hides briefly after `Window.show()` so activation does not collapse the panel.
-const POPOVER_SHOW_GRACE_MS: u64 = 2000;
+/// Just long enough to ride out activation focus churn; short enough that click-away still dismisses.
+const POPOVER_SHOW_GRACE_MS: u64 = 500;
 
 /// Set `false` only when diagnosing focus-loss; production should keep `true`.
 const FOCUS_LOSS_AUTO_HIDE_ENABLED: bool = true;
@@ -29,8 +30,6 @@ const FOCUS_LOSS_AUTO_HIDE_ENABLED: bool = true;
 pub(crate) struct PopoverState {
     last_opened_at: Arc<Mutex<Option<Instant>>>,
     picker_active: Arc<AtomicBool>,
-    /// While true, never auto-hide on focus loss (tray open gesture / show path).
-    block_focus_hide: Arc<AtomicBool>,
 }
 
 impl PopoverState {
@@ -38,29 +37,15 @@ impl PopoverState {
         Self {
             last_opened_at: Arc::new(Mutex::new(None)),
             picker_active: Arc::new(AtomicBool::new(false)),
-            block_focus_hide: Arc::new(AtomicBool::new(false)),
         }
     }
 
+    /// Anchor the grace window at the moment the panel is shown. Focus-loss events that
+    /// arrive within `POPOVER_SHOW_GRACE_MS` of this are activation churn and are ignored.
     pub(crate) fn mark_opening(&self) {
         if let Ok(mut last_opened_at) = self.last_opened_at.lock() {
             *last_opened_at = Some(Instant::now());
         }
-    }
-
-    pub(crate) fn set_block_focus_hide(&self, block: bool) {
-        self.block_focus_hide.store(block, Ordering::SeqCst);
-    }
-
-    pub(crate) fn begin_tray_open_gesture(&self) {
-        self.set_block_focus_hide(true);
-    }
-
-    pub(crate) fn end_tray_open_gesture(&self) {
-        // Do not refresh mark_opening here — focus-loss may already be queued; grace is
-        // anchored at window.show() in activate_app_for_popover.
-        self.set_block_focus_hide(false);
-        popover_trace("Tray open gesture complete — focus-hide unblocked");
     }
 
     fn begin_picker(&self) {
@@ -73,9 +58,6 @@ impl PopoverState {
 
     fn should_hide_on_focus_loss(&self) -> bool {
         if !FOCUS_LOSS_AUTO_HIDE_ENABLED {
-            return false;
-        }
-        if self.block_focus_hide.load(Ordering::SeqCst) {
             return false;
         }
         if self.picker_active.load(Ordering::SeqCst) {
@@ -104,66 +86,43 @@ struct TrayMenuState {
     quit_label: Arc<Mutex<String>>,
 }
 
-/// Suppresses extra tray mouse-up events AppKit delivers after a tray-driven toggle.
+/// Collapses the burst of duplicate tray `Click` events macOS delivers for a single
+/// physical click into one toggle.
 ///
-/// One physical click often produces three Down/Up pairs; only the first Up is user intent.
+/// AppKit emits a non-deterministic number of Down/Up pairs per physical tray click
+/// (3–5 observed in traces), so counting spurious events cannot work — the count varies.
+/// Instead we debounce by time: the first Up toggles; any further Ups within the debounce
+/// window belong to the same physical click and are ignored, regardless of how many arrive.
 #[derive(Clone)]
-struct TrayClickGestureGuard {
-    ignore_remaining_left_mouse_ups: Arc<AtomicU8>,
+struct TrayClickDebounce {
+    last_toggle_at: Arc<Mutex<Option<Instant>>>,
 }
 
-/// Spurious left mouse-ups after tray open (trace: 2 suppressed + 1 more still hid panel).
-const TRAY_SPURIOUS_MOUSE_UPS_AFTER_OPEN: u8 = 3;
-/// Spurious left mouse-ups after tray close (trace: 1 suppressed + 1 more still reopened).
-const TRAY_SPURIOUS_MOUSE_UPS_AFTER_CLOSE: u8 = 2;
+/// Tray `Up` events closer together than this belong to one physical click and collapse to
+/// a single toggle. Bursts arrive within a few ms; a deliberate human re-click is far
+/// slower, so this never swallows an intentional second click.
+const TRAY_TOGGLE_DEBOUNCE_MS: u64 = 400;
 
-impl TrayClickGestureGuard {
+impl TrayClickDebounce {
     fn new() -> Self {
         Self {
-            ignore_remaining_left_mouse_ups: Arc::new(AtomicU8::new(0)),
+            last_toggle_at: Arc::new(Mutex::new(None)),
         }
     }
 
-    fn start_suppression(&self, popover: &PopoverState, count: u8, label: &str) {
-        self.ignore_remaining_left_mouse_ups
-            .store(count, Ordering::SeqCst);
-        popover.begin_tray_open_gesture();
-        tray_guard_trace(&format!(
-            "{label} gesture started — suppressing {count} spurious mouse-up(s)"
-        ));
-    }
-
-    fn start_opening_gesture(&self, popover: &PopoverState) {
-        self.start_suppression(
-            popover,
-            TRAY_SPURIOUS_MOUSE_UPS_AFTER_OPEN,
-            "Opening",
-        );
-    }
-
-    fn start_closing_gesture(&self, popover: &PopoverState) {
-        self.start_suppression(
-            popover,
-            TRAY_SPURIOUS_MOUSE_UPS_AFTER_CLOSE,
-            "Closing",
-        );
-    }
-
-    fn take_ignored_mouse_up(&self, popover: &PopoverState) -> bool {
-        let remaining = self.ignore_remaining_left_mouse_ups.load(Ordering::SeqCst);
-        if remaining == 0 {
-            return false;
+    /// Returns `true` if this click should toggle the popover; `false` if it is a burst
+    /// duplicate of a click already handled within the debounce window.
+    fn accept_click(&self) -> bool {
+        let Ok(mut last_toggle_at) = self.last_toggle_at.lock() else {
+            return true;
+        };
+        let now = Instant::now();
+        if let Some(prev) = *last_toggle_at {
+            if now.duration_since(prev) < Duration::from_millis(TRAY_TOGGLE_DEBOUNCE_MS) {
+                return false;
+            }
         }
-        let next = remaining - 1;
-        self.ignore_remaining_left_mouse_ups
-            .store(next, Ordering::SeqCst);
-        tray_guard_trace(&format!(
-            "Ignoring spurious mouse-up ({next} remaining to suppress)"
-        ));
-        if next == 0 {
-            popover.end_tray_open_gesture();
-            tray_guard_trace("Gesture complete");
-        }
+        *last_toggle_at = Some(now);
         true
     }
 }
@@ -255,7 +214,6 @@ fn show_popover<R: Runtime>(
     popover: &PopoverState,
 ) {
     popover_trace("PopoverManager.show()");
-    popover.set_block_focus_hide(true);
 
     // Center first so the panel is on-screen even if tray coordinates are wrong.
     let _ = window.center();
@@ -318,7 +276,6 @@ fn open_popover_from_menu<R: Runtime>(
         .tray_by_id(&tray_state.tray_id)
         .and_then(|t| t.rect().ok().flatten());
     show_popover(window, rect.as_ref(), popover);
-    popover.set_block_focus_hide(false);
 }
 
 #[tauri::command]
@@ -573,8 +530,7 @@ pub fn run() {
 
             let popover_state = PopoverState::new();
             app.manage(popover_state.clone());
-            let tray_gesture_guard = TrayClickGestureGuard::new();
-            app.manage(tray_gesture_guard.clone());
+            let tray_click_debounce = TrayClickDebounce::new();
 
             let window = app.get_webview_window("main").expect("main window");
             let w = window.clone();
@@ -626,7 +582,7 @@ pub fn run() {
                 })
                 .on_tray_icon_event({
                     let popover = popover_state.clone();
-                    let tray_gesture_guard = tray_gesture_guard.clone();
+                    let tray_click_debounce = tray_click_debounce.clone();
                     move |tray, event| {
                     let app = tray.app_handle();
                     let Some(tray_state) = app.try_state::<TrayMenuState>() else {
@@ -652,18 +608,12 @@ pub fn run() {
                             };
                             match button {
                                 MouseButton::Left => {
-                                    if tray_gesture_guard.take_ignored_mouse_up(&popover) {
+                                    if !tray_click_debounce.accept_click() {
+                                        popover_trace("Tray Click: debounced (burst duplicate)");
                                         return;
                                     }
-                                    let was_visible = window.is_visible().unwrap_or(false);
                                     popover_trace("Tray Click → PopoverManager.toggle()");
                                     toggle_popover_from_tray(&window, &rect, &popover);
-                                    let now_visible = window.is_visible().unwrap_or(false);
-                                    if !was_visible && now_visible {
-                                        tray_gesture_guard.start_opening_gesture(&popover);
-                                    } else if was_visible && !now_visible {
-                                        tray_gesture_guard.start_closing_gesture(&popover);
-                                    }
                                 }
                                 MouseButton::Right => {
                                     popover_trace("Tray Click: right → menu");

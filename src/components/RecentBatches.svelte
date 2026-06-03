@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { locale, t } from "../lib/i18n";
+  import { getLocale, t } from "../lib/i18n.svelte";
   import type { BatchResult } from "../lib/types";
 
   let { batches, onOpenFolder }: { batches: BatchResult[]; onOpenFolder: (path: string) => void } = $props();
@@ -7,7 +7,8 @@
   function formatDate(timestamp: string): string {
     try {
       const d = new Date(timestamp);
-      const localeTag = locale === "zh" ? "zh-Hans" : locale;
+      const loc = getLocale();
+      const localeTag = loc === "zh" ? "zh-Hans" : loc;
       return d.toLocaleDateString(localeTag, {
         month: "short",
         day: "numeric",

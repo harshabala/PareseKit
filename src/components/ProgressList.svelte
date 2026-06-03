@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from "../lib/i18n";
+  import { t } from "../lib/i18n.svelte";
   import type { FileProgress } from "../lib/types";
 
   let { files, total, isParsing }: { files: FileProgress[]; total: number; isParsing: boolean } = $props();
