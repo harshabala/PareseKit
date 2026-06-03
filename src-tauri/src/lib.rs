@@ -1,24 +1,36 @@
 pub mod macos_popover;
+pub mod popover_trace;
 pub mod sidecar_helpers;
 
+use popover_trace::{trace as popover_trace, tray_guard_trace};
+
+pub use popover_trace::startup_trace;
+
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
-use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent, TrayIconId};
+use tauri::tray::{
+    MouseButton, MouseButtonState, TrayIcon, TrayIconBuilder, TrayIconEvent, TrayIconId,
+};
 use tauri::{AppHandle, Manager, PhysicalPosition, Position, Rect, Runtime, Size, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use walkdir::WalkDir;
 
-const TRAY_ICON: tauri::image::Image<'static> = tauri::include_image!("icons/tray/icon.png");
-/// Ignore focus-loss hides briefly after opening so tray mouse-up does not collapse the panel.
-const POPOVER_SHOW_GRACE_MS: u64 = 400;
+const TRAY_ICON: tauri::image::Image<'static> = tauri::include_image!("icons/tray/icon@2x.png");
+/// Ignore focus-loss hides briefly after `Window.show()` so activation does not collapse the panel.
+const POPOVER_SHOW_GRACE_MS: u64 = 2000;
+
+/// Set `false` only when diagnosing focus-loss; production should keep `true`.
+const FOCUS_LOSS_AUTO_HIDE_ENABLED: bool = true;
 
 #[derive(Clone)]
-struct PopoverState {
+pub(crate) struct PopoverState {
     last_opened_at: Arc<Mutex<Option<Instant>>>,
     picker_active: Arc<AtomicBool>,
+    /// While true, never auto-hide on focus loss (tray open gesture / show path).
+    block_focus_hide: Arc<AtomicBool>,
 }
 
 impl PopoverState {
@@ -26,13 +38,29 @@ impl PopoverState {
         Self {
             last_opened_at: Arc::new(Mutex::new(None)),
             picker_active: Arc::new(AtomicBool::new(false)),
+            block_focus_hide: Arc::new(AtomicBool::new(false)),
         }
     }
 
-    fn mark_opening(&self) {
+    pub(crate) fn mark_opening(&self) {
         if let Ok(mut last_opened_at) = self.last_opened_at.lock() {
             *last_opened_at = Some(Instant::now());
         }
+    }
+
+    pub(crate) fn set_block_focus_hide(&self, block: bool) {
+        self.block_focus_hide.store(block, Ordering::SeqCst);
+    }
+
+    pub(crate) fn begin_tray_open_gesture(&self) {
+        self.set_block_focus_hide(true);
+    }
+
+    pub(crate) fn end_tray_open_gesture(&self) {
+        // Do not refresh mark_opening here — focus-loss may already be queued; grace is
+        // anchored at window.show() in activate_app_for_popover.
+        self.set_block_focus_hide(false);
+        popover_trace("Tray open gesture complete — focus-hide unblocked");
     }
 
     fn begin_picker(&self) {
@@ -44,6 +72,12 @@ impl PopoverState {
     }
 
     fn should_hide_on_focus_loss(&self) -> bool {
+        if !FOCUS_LOSS_AUTO_HIDE_ENABLED {
+            return false;
+        }
+        if self.block_focus_hide.load(Ordering::SeqCst) {
+            return false;
+        }
         if self.picker_active.load(Ordering::SeqCst) {
             return false;
         }
@@ -52,8 +86,15 @@ impl PopoverState {
             .ok()
             .and_then(|last_opened_at| *last_opened_at)
             .map(|opened_at| opened_at.elapsed() > Duration::from_millis(POPOVER_SHOW_GRACE_MS))
-            .unwrap_or(true)
+            .unwrap_or(false)
     }
+}
+
+/// Keeps the tray icon alive for the app lifetime (tray-icon drops NSStatusItem when the last clone goes away).
+#[derive(Clone)]
+#[allow(dead_code)]
+struct TrayHandle<R: Runtime> {
+    icon: TrayIcon<R>,
 }
 
 #[derive(Clone)]
@@ -61,6 +102,70 @@ struct TrayMenuState {
     tray_id: TrayIconId,
     open_label: Arc<Mutex<String>>,
     quit_label: Arc<Mutex<String>>,
+}
+
+/// Suppresses extra tray mouse-up events AppKit delivers after a tray-driven toggle.
+///
+/// One physical click often produces three Down/Up pairs; only the first Up is user intent.
+#[derive(Clone)]
+struct TrayClickGestureGuard {
+    ignore_remaining_left_mouse_ups: Arc<AtomicU8>,
+}
+
+/// Spurious left mouse-ups after tray open (intentional Up + these extras per trace).
+const TRAY_SPURIOUS_MOUSE_UPS_AFTER_OPEN: u8 = 2;
+/// Spurious left mouse-up after tray close (one extra toggle reopen in trace).
+const TRAY_SPURIOUS_MOUSE_UPS_AFTER_CLOSE: u8 = 1;
+
+impl TrayClickGestureGuard {
+    fn new() -> Self {
+        Self {
+            ignore_remaining_left_mouse_ups: Arc::new(AtomicU8::new(0)),
+        }
+    }
+
+    fn start_suppression(&self, popover: &PopoverState, count: u8, label: &str) {
+        self.ignore_remaining_left_mouse_ups
+            .store(count, Ordering::SeqCst);
+        popover.begin_tray_open_gesture();
+        tray_guard_trace(&format!(
+            "{label} gesture started — suppressing {count} spurious mouse-up(s)"
+        ));
+    }
+
+    fn start_opening_gesture(&self, popover: &PopoverState) {
+        self.start_suppression(
+            popover,
+            TRAY_SPURIOUS_MOUSE_UPS_AFTER_OPEN,
+            "Opening",
+        );
+    }
+
+    fn start_closing_gesture(&self, popover: &PopoverState) {
+        self.start_suppression(
+            popover,
+            TRAY_SPURIOUS_MOUSE_UPS_AFTER_CLOSE,
+            "Closing",
+        );
+    }
+
+    fn take_ignored_mouse_up(&self, popover: &PopoverState) -> bool {
+        let remaining = self.ignore_remaining_left_mouse_ups.load(Ordering::SeqCst);
+        if remaining == 0 {
+            return false;
+        }
+        let next = remaining - 1;
+        self.ignore_remaining_left_mouse_ups
+            .store(next, Ordering::SeqCst);
+        tray_guard_trace(&format!(
+            "Ignoring spurious mouse-up ({next} remaining to suppress)"
+        ));
+        if next == 0 {
+            popover.end_tray_open_gesture();
+            tray_guard_trace("Gesture complete");
+        }
+        true
+    }
 }
 
 fn build_tray_menu<R: Runtime>(
@@ -75,6 +180,7 @@ fn build_tray_menu<R: Runtime>(
 }
 
 fn popup_tray_menu<R: Runtime>(app: &AppHandle<R>, tray_state: &TrayMenuState) -> Result<(), String> {
+    popover_trace("Tray right-click: popup_menu");
     let open_label = tray_state
         .open_label
         .lock()
@@ -91,7 +197,9 @@ fn popup_tray_menu<R: Runtime>(app: &AppHandle<R>, tray_state: &TrayMenuState) -
 }
 
 fn position_popover_under_tray<R: Runtime>(window: &WebviewWindow<R>, rect: &Rect) -> bool {
+    popover_trace("Positioning: start (under tray)");
     let Ok(win_size) = window.outer_size() else {
+        popover_trace("Positioning: FAILED (outer_size)");
         return false;
     };
     let scale = window.scale_factor().unwrap_or(1.0);
@@ -129,10 +237,14 @@ fn position_popover_under_tray<R: Runtime>(window: &WebviewWindow<R>, rect: &Rec
 
     // Reject coordinates that would place the window off-screen (bad tray rect).
     if y < 0 || y as f64 > monitor_height - 80.0 || x < -win_w as i32 / 2 {
+        popover_trace(&format!(
+            "Positioning: REJECTED x={x} y={y} monitor={monitor_width}x{monitor_height}"
+        ));
         return false;
     }
 
     let _ = window.set_position(PhysicalPosition::new(x, y));
+    popover_trace(&format!("Positioning: OK x={x} y={y} win={win_w}x{win_h}"));
     let _ = win_h; // keep height available for future vertical clamping
     true
 }
@@ -142,19 +254,42 @@ fn show_popover<R: Runtime>(
     rect: Option<&Rect>,
     popover: &PopoverState,
 ) {
-    popover.mark_opening();
+    popover_trace("PopoverManager.show()");
+    popover.set_block_focus_hide(true);
 
     // Center first so the panel is on-screen even if tray coordinates are wrong.
     let _ = window.center();
+    popover_trace("Positioning: center()");
     if let Some(r) = rect {
         let _ = position_popover_under_tray(window, r);
+    } else {
+        popover_trace("Positioning: skipped (no tray rect)");
     }
 
-    macos_popover::activate_app_for_popover(window);
+    macos_popover::activate_app_for_popover(window, popover);
+    log_window_visibility(window, "after show_popover");
 }
 
 fn hide_popover<R: Runtime>(window: &WebviewWindow<R>) {
+    popover_trace("PopoverManager.hide()");
     let _ = window.hide();
+    log_window_visibility(window, "after hide_popover");
+}
+
+fn log_window_visibility<R: Runtime>(window: &WebviewWindow<R>, context: &str) {
+    let visible = window.is_visible().unwrap_or(false);
+    let size = window
+        .outer_size()
+        .map(|s| format!("{}x{}", s.width, s.height))
+        .unwrap_or_else(|_| "?".into());
+    let pos = window
+        .outer_position()
+        .map(|p| format!("({}, {})", p.x, p.y))
+        .unwrap_or_else(|_| "?".into());
+    let scale = window.scale_factor().unwrap_or(0.0);
+    popover_trace(&format!(
+        "Window.visibility [{context}]: visible={visible} size={size} pos={pos} scale={scale}"
+    ));
 }
 
 fn toggle_popover_from_tray<R: Runtime>(
@@ -162,9 +297,12 @@ fn toggle_popover_from_tray<R: Runtime>(
     rect: &Rect,
     popover: &PopoverState,
 ) {
+    popover_trace("PopoverManager.toggle()");
     if window.is_visible().unwrap_or(false) {
+        popover_trace("toggle: branch hide (already visible)");
         hide_popover(window);
     } else {
+        popover_trace("toggle: branch show (not visible)");
         show_popover(window, Some(rect), popover);
     }
 }
@@ -175,10 +313,12 @@ fn open_popover_from_menu<R: Runtime>(
     tray_state: &TrayMenuState,
     popover: &PopoverState,
 ) {
+    popover_trace("Tray menu: Open ParseDock → show");
     let rect = app
         .tray_by_id(&tray_state.tray_id)
         .and_then(|t| t.rect().ok().flatten());
     show_popover(window, rect.as_ref(), popover);
+    popover.set_block_focus_hide(false);
 }
 
 #[tauri::command]
@@ -223,9 +363,13 @@ fn run_file_picker<R: Runtime, F: FnOnce(&AppHandle<R>) -> Option<Vec<String>>>(
     popover: &PopoverState,
     pick: F,
 ) -> Result<Option<Vec<String>>, String> {
+    popover_trace("File picker: with_modal_session begin");
     popover.begin_picker();
     #[cfg(target_os = "macos")]
-    elevate_app_for_file_dialog(&app);
+    {
+        elevate_app_for_file_dialog(&app);
+        popover_trace("File picker: activation policy → Regular");
+    }
 
     let result = pick(&app);
 
@@ -238,8 +382,12 @@ fn run_file_picker<R: Runtime, F: FnOnce(&AppHandle<R>) -> Option<Vec<String>>>(
             .unwrap_or(false);
         if !popover_still_open {
             restore_accessory_app_policy(&app);
+            popover_trace("File picker: activation policy → Accessory (popover closed)");
+        } else {
+            popover_trace("File picker: keeping Accessory/Regular (popover still open)");
         }
     }
+    popover_trace("File picker: with_modal_session end");
     Ok(result)
 }
 
@@ -416,30 +564,50 @@ pub fn run() {
             update_tray_menu_labels
         ])
         .setup(|app| {
+            startup_trace("setup() begin");
             #[cfg(target_os = "macos")]
-            app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+            {
+                app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+                startup_trace("activation policy set to Accessory");
+            }
 
             let popover_state = PopoverState::new();
             app.manage(popover_state.clone());
+            let tray_gesture_guard = TrayClickGestureGuard::new();
+            app.manage(tray_gesture_guard.clone());
 
             let window = app.get_webview_window("main").expect("main window");
             let w = window.clone();
             let popover_for_events = popover_state.clone();
+            if let Ok(url) = window.url() {
+                startup_trace(&format!("webview url={url}"));
+            } else {
+                startup_trace("webview url: unavailable");
+            }
             window.on_window_event(move |event| {
                 if let tauri::WindowEvent::Focused(false) = event {
-                    if popover_for_events.should_hide_on_focus_loss() {
+                    let should_hide = popover_for_events.should_hide_on_focus_loss();
+                    popover_trace(&format!(
+                        "Focus-loss: should_hide={should_hide} (grace/picker gate)"
+                    ));
+                    if should_hide {
+                        popover_trace("Focus-loss: → hide");
                         hide_popover(&w);
+                    } else {
+                        popover_trace("Focus-loss: suppressed (grace or picker active)");
                     }
                 }
             });
 
-            let _tray = TrayIconBuilder::new()
+            let tray = TrayIconBuilder::new()
                 .icon(TRAY_ICON)
                 .icon_as_template(true)
+                .show_menu_on_left_click(false)
                 .tooltip("ParseDock")
                 // Do NOT attach .menu() — macOS captures left-clicks for the status item menu.
                 .on_menu_event(|app, event| {
                     if event.id().as_ref() == "open_parsedock" {
+                        popover_trace("Tray menu event: open_parsedock");
                         if let (Some(window), Some(tray_state), Some(popover)) = (
                             app.get_webview_window("main"),
                             app.try_state::<TrayMenuState>(),
@@ -451,14 +619,18 @@ pub fn run() {
                                 tray_state.inner(),
                                 popover.inner(),
                             );
+                        } else {
+                            popover_trace("Tray menu event: ABORT (missing window/state)");
                         }
                     }
                 })
                 .on_tray_icon_event({
                     let popover = popover_state.clone();
+                    let tray_gesture_guard = tray_gesture_guard.clone();
                     move |tray, event| {
                     let app = tray.app_handle();
                     let Some(tray_state) = app.try_state::<TrayMenuState>() else {
+                        popover_trace("Tray Click: ABORT (TrayMenuState missing)");
                         return;
                     };
                     let tray_state = tray_state.inner().clone();
@@ -471,32 +643,75 @@ pub fn run() {
                             ..
                         } => {
                             if button_state != MouseButtonState::Up {
+                                popover_trace("Tray Click: ignored (not mouse-up)");
                                 return;
                             }
                             let Some(window) = app.get_webview_window("main") else {
+                                popover_trace("Tray Click: ABORT (main window missing)");
                                 return;
                             };
                             match button {
                                 MouseButton::Left => {
+                                    if tray_gesture_guard.take_ignored_mouse_up(&popover) {
+                                        return;
+                                    }
+                                    let was_visible = window.is_visible().unwrap_or(false);
+                                    popover_trace("Tray Click → PopoverManager.toggle()");
                                     toggle_popover_from_tray(&window, &rect, &popover);
+                                    let now_visible = window.is_visible().unwrap_or(false);
+                                    if !was_visible && now_visible {
+                                        tray_gesture_guard.start_opening_gesture(&popover);
+                                    } else if was_visible && !now_visible {
+                                        tray_gesture_guard.start_closing_gesture(&popover);
+                                    }
                                 }
                                 MouseButton::Right => {
+                                    popover_trace("Tray Click: right → menu");
                                     let _ = popup_tray_menu(&app, &tray_state);
                                 }
-                                _ => {}
+                                _ => {
+                                    popover_trace("Tray Click: ignored (other button)");
+                                }
                             }
                         }
                         _ => {}
                     }
                 }
                 })
-                .build(app)?;
+                .build(app)
+                .map_err(|e| {
+                    startup_trace(&format!("tray build FAILED: {e}"));
+                    e
+                })?;
+
+            let tray_id = tray.id().clone();
+            app.manage(TrayHandle { icon: tray.clone() });
+            startup_trace(&format!("tray created and retained id={}", tray_id.0));
+
+            if let Some(handle) = app.tray_by_id(&tray_id) {
+                match handle.rect() {
+                    Ok(Some(rect)) => startup_trace(&format!(
+                        "tray rect OK position={:?} size={:?}",
+                        rect.position, rect.size
+                    )),
+                    Ok(None) => startup_trace("tray rect: None (status item not yet laid out)"),
+                    Err(e) => startup_trace(&format!("tray rect error: {e}")),
+                }
+            } else {
+                startup_trace("tray lookup by id FAILED immediately after build");
+            }
 
             app.manage(TrayMenuState {
-                tray_id: _tray.id().clone(),
+                tray_id,
                 open_label: Arc::new(Mutex::new("Open ParseDock".to_string())),
                 quit_label: Arc::new(Mutex::new("Quit ParseDock".to_string())),
             });
+
+            popover_trace(&format!(
+                "Setup complete — trace file: {}",
+                popover_trace::TRACE_FILE
+            ));
+            startup_trace("setup() complete");
 
             Ok(())
         })
