@@ -39,6 +39,9 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": ["../sidecar/index.js", "../sidecar/package.json"]
+    "resources": {
+      "../sidecar/index.js": "sidecar/index.js",
+      "../sidecar/package.json": "sidecar/package.json"
+    }
   }
 }

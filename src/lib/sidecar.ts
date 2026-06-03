@@ -1,4 +1,5 @@
 import { Command } from "@tauri-apps/plugin-shell";
+import { resolveResource } from "@tauri-apps/api/path";
 
 export interface ParseConfig {
   inputDir: string;
@@ -27,9 +28,11 @@ export function runParse(
 ): Promise<void> {
   return new Promise(async (resolve, reject) => {
     try {
-      // In dev mode, the sidecar script is at the project root's sidecar/ directory
-      // In production, it would be resolved via resolveResource
-      const scriptPath = "sidecar/index.js";
+      // In dev mode, use a relative path (cwd is the project root which has sidecar/).
+      // In production, resolve via Tauri's resource dir where the file is bundled.
+      const scriptPath = import.meta.env.DEV
+        ? "sidecar/index.js"
+        : await resolveResource("sidecar/index.js");
 
       const command = Command.create("node", [scriptPath]);
 
