@@ -4,9 +4,13 @@ export type { AppLocale } from "./i18n";
 export type FileStatus = "pending" | "parsing" | "done" | "error" | "skipped";
 
 export interface FileProgress {
+  /** Full input path — unique key for progress updates */
+  id: string;
+  /** Display name (basename) */
   name: string;
   status: FileStatus;
-  path?: string;
+  /** Output file path when done/skipped */
+  outputPath?: string;
   error?: string;
 }
 

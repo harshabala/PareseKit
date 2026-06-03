@@ -62,6 +62,7 @@ async fn process_file(
             emit(json!({
                 "type": "progress",
                 "file": file_name,
+                "sourcePath": file_path,
                 "status": "skipped",
                 "path": out_path.to_string_lossy(),
             }));
@@ -72,6 +73,7 @@ async fn process_file(
     emit(json!({
         "type": "progress",
         "file": file_name,
+        "sourcePath": file_path,
         "status": "parsing",
     }));
 
@@ -83,6 +85,7 @@ async fn process_file(
                 emit(json!({
                     "type": "progress",
                     "file": file_name,
+                    "sourcePath": file_path,
                     "status": "error",
                     "error": e.to_string(),
                 }));
@@ -91,6 +94,7 @@ async fn process_file(
             emit(json!({
                 "type": "progress",
                 "file": file_name,
+                "sourcePath": file_path,
                 "status": "completed",
                 "path": out_path.to_string_lossy(),
             }));
@@ -100,6 +104,7 @@ async fn process_file(
             emit(json!({
                 "type": "progress",
                 "file": file_name,
+                "sourcePath": file_path,
                 "status": "error",
                 "error": e.to_string(),
             }));

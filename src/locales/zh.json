@@ -43,6 +43,7 @@
   },
   "recent": {
     "title": "最近批次",
+    "selectedFiles": "所选文件",
     "batch": "批次",
     "open": "打开",
     "meta": "{date} · {count} 个文件 · {format}",
@@ -63,7 +64,8 @@
     "ocrLanguageLabel": "文档文字语言",
     "appearanceTitle": "外观",
     "appearanceHint": "选择 ParseDock 在您 Mac 上的显示方式。",
-    "close": "关闭"
+    "close": "关闭",
+    "ocrMigrated": "OCR 语言已重置为英语。请在设置中选择支持的语言。"
   },
   "language": {
     "en": "English",

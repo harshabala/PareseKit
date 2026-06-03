@@ -14,6 +14,8 @@ export interface ParseConfig {
 export interface ParseEvent {
   type: "start" | "progress" | "done" | "error";
   file?: string;
+  /** Full path of the input file being processed */
+  sourcePath?: string;
   status?: string;
   path?: string;
   message?: string;

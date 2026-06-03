@@ -5,7 +5,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
-use tauri::tray::{MouseButtonState, TrayIconBuilder, TrayIconEvent};
+use tauri::tray::{MouseButtonState, TrayIconBuilder, TrayIconEvent, TrayIconId};
 use tauri::{AppHandle, Manager, PhysicalPosition, Position, Runtime, Size, State, WebviewWindow};
 use tauri_plugin_dialog::DialogExt;
 use walkdir::WalkDir;
@@ -29,6 +29,37 @@ fn toggle_popover<R: Runtime>(app: AppHandle<R>, window: WebviewWindow<R>) {
         return;
     }
     show_popover(&app, &window);
+}
+
+#[derive(Clone)]
+struct TrayMenuState {
+    tray_id: TrayIconId,
+}
+
+fn build_tray_menu<R: Runtime>(
+    app: &AppHandle<R>,
+    open_label: &str,
+    quit_label: &str,
+) -> tauri::Result<Menu<R>> {
+    let open_item = MenuItem::with_id(app, "open_parsedock", open_label, true, None::<&str>)?;
+    let separator = PredefinedMenuItem::separator(app)?;
+    let quit_item = PredefinedMenuItem::quit(app, Some(quit_label))?;
+    Menu::with_items(app, &[&open_item, &separator, &quit_item])
+}
+
+#[tauri::command]
+fn update_tray_menu_labels(
+    app: AppHandle,
+    tray_state: State<TrayMenuState>,
+    open_label: String,
+    quit_label: String,
+) -> Result<(), String> {
+    let menu = build_tray_menu(&app, &open_label, &quit_label).map_err(|e| e.to_string())?;
+    app.tray_by_id(&tray_state.tray_id)
+        .ok_or_else(|| "Tray icon not found".to_string())?
+        .set_menu(Some(menu))
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[derive(Clone)]
@@ -277,7 +308,8 @@ pub fn run() {
             trigger_haptic,
             pick_input_files,
             pick_input_folder,
-            pick_output_folder
+            pick_output_folder,
+            update_tray_menu_labels
         ])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -297,12 +329,9 @@ pub fn run() {
                 }
             });
 
-            let open_item = MenuItem::with_id(app, "open_parsedock", "Open ParseDock", true, None::<&str>)?;
-            let separator = PredefinedMenuItem::separator(app)?;
-            let quit_item = PredefinedMenuItem::quit(app, Some("Quit ParseDock"))?;
-            let tray_menu = Menu::with_items(app, &[&open_item, &separator, &quit_item])?;
+            let tray_menu = build_tray_menu(app.handle(), "Open ParseDock", "Quit ParseDock")?;
 
-            let _tray = TrayIconBuilder::new()
+            let tray = TrayIconBuilder::new()
                 .icon(TRAY_ICON)
                 .icon_as_template(true)
                 .tooltip("ParseDock")
@@ -384,6 +413,10 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
+
+            app.manage(TrayMenuState {
+                tray_id: tray.id().clone(),
+            });
 
             Ok(())
         })

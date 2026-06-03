@@ -7,15 +7,13 @@
   import { runParse, type ParseEvent } from "./lib/sidecar";
   import type { OutputFormat, FileProgress, BatchResult, ThemeMode } from "./lib/types";
   import { MAX_RECENT_BATCHES } from "./lib/types";
+  import { initLocale, locale, t, type AppLocale } from "./lib/i18n";
   import {
-    initLocale,
-    locale,
-    localeFromLegacyOcr,
-    normalizeLocale,
-    t,
-    type AppLocale,
-  } from "./lib/i18n";
-  import { normalizeOcrLanguage, type OcrLanguageCode } from "./lib/ocrLanguages";
+    isKnownOcrLanguage,
+    normalizeOcrLanguage,
+    type OcrLanguageCode,
+  } from "./lib/ocrLanguages";
+  import { fileBaseName, filterSupportedPaths } from "./lib/supportedExtensions";
   import { applyTheme, DEFAULT_THEME, normalizeThemeMode } from "./lib/theme";
   import DropZone from "./components/DropZone.svelte";
   import OutputFolderPicker from "./components/OutputFolderPicker.svelte";
@@ -42,6 +40,7 @@
   let theme = $state<ThemeMode>(DEFAULT_THEME);
   let inputFileCount = $state<number | null>(null);
   let errorMsg = $state<string | null>(null);
+  let noticeMsg = $state<string | null>(null);
 
   let showProgress = $derived(isParsing || files.length > 0);
   let canRunParse = $derived(
@@ -70,9 +69,21 @@
     await setSetting("theme", mode);
   }
 
+  async function syncTrayMenu() {
+    try {
+      await invoke("update_tray_menu_labels", {
+        openLabel: t("tray.open"),
+        quitLabel: t("tray.quit"),
+      });
+    } catch {
+      /* tray may not exist in web-only dev */
+    }
+  }
+
   async function handleLocaleChange(code: AppLocale) {
     initLocale(code);
     await setSetting("locale", code);
+    await syncTrayMenu();
   }
 
   async function handleOcrLanguageChange(code: OcrLanguageCode) {
@@ -102,16 +113,15 @@
 
     format = await getSetting<OutputFormat>("format", "md");
     ocrEnabled = await getSetting("ocrEnabled", true);
-    const savedLocale = await getSetting<AppLocale | null>("locale", null);
-    const resolvedLocale = savedLocale
-      ? normalizeLocale(savedLocale)
-      : localeFromLegacyOcr(await getSetting("ocrLanguage", "eng"));
-    initLocale(resolvedLocale);
-    await setSetting("locale", resolvedLocale);
-    ocrLanguage = normalizeOcrLanguage(await getSetting("ocrLanguage", "eng"));
+    const rawOcr = String(await getSetting("ocrLanguage", "eng"));
+    if (!isKnownOcrLanguage(rawOcr)) {
+      noticeMsg = t("settings.ocrMigrated");
+    }
+    ocrLanguage = normalizeOcrLanguage(rawOcr);
     await setSetting("ocrLanguage", ocrLanguage);
     recentBatches = await getSetting<BatchResult[]>("recentBatches", []);
     await resolveDefaultWorkers(await getSetting<number>("workers", 0));
+    await syncTrayMenu();
 
     const savedInput = await getSetting("inputDir", "");
     if (savedInput) {
@@ -140,10 +150,16 @@
   }
 
   async function handleFilesSelected(paths: string[]) {
-    selectedFiles = paths;
+    const supported = filterSupportedPaths(paths);
+    selectedFiles = supported;
     inputDir = "";
     await setSetting("inputDir", "");
-    updateInputCount(paths.length);
+    updateInputCount(supported.length);
+    if (paths.length > 0 && supported.length === 0) {
+      errorMsg = t("errors.noSupported");
+    } else {
+      errorMsg = null;
+    }
   }
 
   async function handleOutputSelect(path: string) {
@@ -192,7 +208,8 @@
     isParsing = true;
     totalFiles = filesToParse.length;
     files = filesToParse.map((path) => ({
-      name: path.split(/[/\\]/).pop() || path,
+      id: path,
+      name: fileBaseName(path),
       status: "pending" as const,
     }));
 
@@ -211,24 +228,35 @@
           if (event.type === "start") {
             totalFiles = event.total || 0;
           } else if (event.type === "progress") {
-            const name = event.file || "";
+            const sourcePath = event.sourcePath;
+            const displayName = event.file || (sourcePath ? fileBaseName(sourcePath) : "");
             let status: FileProgress["status"] = "pending";
             if (event.status === "completed") status = "done";
             else if (event.status === "parsing") status = "parsing";
             else if (event.status === "error") status = "error";
             else if (event.status === "skipped") status = "skipped";
 
-            const existingIndex = files.findIndex((f) => f.name === name);
+            const existingIndex = sourcePath
+              ? files.findIndex((f) => f.id === sourcePath)
+              : files.findIndex(
+                  (f) => f.name === displayName && f.status !== "done" && f.status !== "error"
+                );
             if (existingIndex !== -1) {
               files[existingIndex] = {
                 ...files[existingIndex],
                 status,
-                path: event.path || files[existingIndex].path,
+                outputPath: event.path || files[existingIndex].outputPath,
                 error: event.error,
               };
-            } else {
+            } else if (sourcePath) {
               files = [
-                { name, status, path: event.path, error: event.error },
+                {
+                  id: sourcePath,
+                  name: displayName,
+                  status,
+                  outputPath: event.path,
+                  error: event.error,
+                },
                 ...files,
               ];
             }
@@ -256,7 +284,7 @@
     const newBatch: BatchResult = {
       id: crypto.randomUUID(),
       timestamp: new Date().toISOString(),
-      inputDir: inputDir || "selected files",
+      inputDir: inputDir || t("recent.selectedFiles"),
       outputDir,
       format,
       fileCount: files.length,
@@ -269,10 +297,10 @@
 
   async function copyToClipboard() {
     const lastFile = files.find((f) => f.status === "done");
-    if (lastFile?.path) {
+    if (lastFile?.outputPath) {
       try {
         const bytes = await invoke<number[]>("copy_file_to_clipboard", {
-          path: lastFile.path,
+          path: lastFile.outputPath,
         });
         const content = new TextDecoder().decode(new Uint8Array(bytes));
         await writeText(content);
@@ -280,7 +308,7 @@
           await invoke("trigger_haptic");
         } catch {}
       } catch {
-        await writeText(lastFile.path);
+        await writeText(lastFile.outputPath);
       }
     }
   }
@@ -400,6 +428,9 @@
       >
         {isParsing ? t("run.parsing") : t("run.runParse")}
       </button>
+      {#if noticeMsg}
+        <div class="notice-banner" role="status">{noticeMsg}</div>
+      {/if}
       {#if errorMsg}
         <div class="error-banner" role="alert">{errorMsg}</div>
       {/if}

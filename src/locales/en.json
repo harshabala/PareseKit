@@ -43,6 +43,7 @@
   },
   "recent": {
     "title": "Recent Batches",
+    "selectedFiles": "Selected files",
     "batch": "Batch",
     "open": "Open",
     "meta": "{date} · {count} files · {format}",
@@ -63,7 +64,8 @@
     "ocrLanguageLabel": "Document text language",
     "appearanceTitle": "Appearance",
     "appearanceHint": "Choose how ParseDock looks on your Mac.",
-    "close": "Close"
+    "close": "Close",
+    "ocrMigrated": "OCR language was reset to English. Choose a supported language in Settings."
   },
   "language": {
     "en": "English",

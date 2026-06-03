@@ -4,12 +4,7 @@
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { t } from "../lib/i18n";
   import { pickInputFiles, pickInputFolder } from "../lib/picker";
-
-  const SUPPORTED_EXTENSIONS = new Set([
-    "pdf", "doc", "docx", "docm", "odt", "rtf", "ppt", "pptx", "pptm", "odp",
-    "xls", "xlsx", "xlsm", "ods", "csv", "tsv", "png", "jpg", "jpeg", "gif",
-    "bmp", "tiff", "tif", "webp", "svg",
-  ]);
+  import { filterSupportedPaths, isSupportedFilePath } from "../lib/supportedExtensions";
 
   let {
     fileCount = null,
@@ -22,11 +17,6 @@
   } = $props();
 
   let dragOver = $state(false);
-
-  function isSupportedFile(path: string): boolean {
-    const ext = path.split(".").pop()?.toLowerCase();
-    return !!ext && SUPPORTED_EXTENSIONS.has(ext);
-  }
 
   async function ingestPaths(paths: string[]) {
     const files: string[] = [];
@@ -41,7 +31,7 @@
         files.length = 0;
         break;
       } catch {
-        if (isSupportedFile(path)) {
+        if (isSupportedFilePath(path)) {
           files.push(path);
         }
       }
@@ -52,8 +42,9 @@
       return;
     }
 
-    if (files.length > 0) {
-      onFiles(files);
+    const supported = filterSupportedPaths(files);
+    if (supported.length > 0) {
+      onFiles(supported);
     }
   }
 

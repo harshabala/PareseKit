@@ -22,7 +22,11 @@ export const OCR_LANGUAGES: readonly OcrLanguageOption[] = [
   { code: "kan", label: "ಕನ್ನಡ (Kannada)" },
 ] as const;
 
-const VALID_CODES = new Set(OCR_LANGUAGES.map((o) => o.code));
+const VALID_CODES = new Set<string>(OCR_LANGUAGES.map((o) => o.code));
+
+export function isKnownOcrLanguage(value: string): boolean {
+  return VALID_CODES.has(value);
+}
 
 export function normalizeOcrLanguage(value: unknown): OcrLanguageCode {
   if (typeof value === "string" && VALID_CODES.has(value as OcrLanguageCode)) {

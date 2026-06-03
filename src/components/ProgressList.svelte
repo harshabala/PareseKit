@@ -79,7 +79,7 @@
     {/if}
 
     <div class="file-list">
-      {#each files as file (file.name)}
+      {#each files as file (file.id)}
         <div class="file-item" class:file-item-active={file.status === "parsing"}>
           <span class="file-name" title={file.name}>{file.name}</span>
           <span class="status-icon status-{file.status}" title={file.status}>
