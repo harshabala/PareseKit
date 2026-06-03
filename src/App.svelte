@@ -352,7 +352,7 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div id="app">
+<div class="shell">
   <header>
     <span>{t("app.name")}</span>
     <div class="header-actions">

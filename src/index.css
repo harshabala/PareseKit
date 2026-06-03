@@ -1,6 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
-/* Brand: Bone White — Craft-inspired warm minimal */
+/* Brand: Bone White — Craft-inspired warm minimal (system fonts: no network @import) */
 :root {
   --bg-color: oklch(0.98 0.005 85 / 0.72);
   --text-color: oklch(0.18 0.01 50);
@@ -27,9 +25,9 @@
   --shadow-color: oklch(0.18 0.01 50 / 0.18);
   --shadow-color-strong: oklch(0.18 0.01 50 / 0.32);
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  --font-serif: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  --font-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+  --font-serif: Georgia, 'Times New Roman', serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
   --timing-fast: 120ms;
   --timing-normal: 180ms;
@@ -122,12 +120,27 @@ body {
   user-select: none;
   overflow: hidden;
   min-height: 100vh;
+}
+
+.boot-fallback {
+  width: 320px;
+  margin: 12px auto;
+  padding: 12px;
+  text-align: center;
+  color: var(--text-secondary, #666);
+  font-size: 13px;
+}
+
+#app {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
   display: flex;
   align-items: flex-start;
   justify-content: center;
 }
 
-#app {
+.shell {
   width: 320px;
   height: 480px;
   min-height: 480px;

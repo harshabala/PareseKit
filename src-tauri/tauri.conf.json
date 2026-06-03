@@ -20,6 +20,7 @@
         "visible": false,
         "decorations": false,
         "transparent": true,
+        "backgroundColor": "#00000000",
         "alwaysOnTop": true,
         "center": false,
         "skipTaskbar": true,
@@ -33,6 +34,9 @@
   "bundle": {
     "active": true,
     "targets": ["app", "dmg"],
+    "macOS": {
+      "infoPlist": "Info.plist"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
