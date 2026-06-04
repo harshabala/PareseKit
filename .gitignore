@@ -11,6 +11,8 @@ src-tauri/gen/
 .env
 src-tauri/com.parsedock.app
 src-tauri/*.app
+com.parsedock.app.lock
+**/com.parsedock.app.lock
 
 # macOS Finder duplicate copies (break cargo auto-discovery in src/bin/)
 * 2.rs
