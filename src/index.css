@@ -71,6 +71,8 @@
   --shadow-color: oklch(0 0 0 / 0.35);
   --shadow-color-strong: oklch(0 0 0 / 0.5);
   --focus-ring: oklch(0.78 0.08 75 / 0.25);
+  --icon-btn-border: oklch(0.52 0.02 85 / 0.88);
+  --icon-btn-bg: oklch(0.22 0.012 85 / 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -94,6 +96,8 @@
     --shadow-color: oklch(0 0 0 / 0.35);
     --shadow-color-strong: oklch(0 0 0 / 0.5);
     --focus-ring: oklch(0.78 0.08 75 / 0.25);
+    --icon-btn-border: oklch(0.52 0.02 85 / 0.88);
+    --icon-btn-bg: oklch(0.22 0.012 85 / 0.55);
   }
 }
 
@@ -1399,7 +1403,7 @@ label {
 
 .icon-btn {
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-color);
   padding: 8px;
   cursor: pointer;
@@ -1410,7 +1414,8 @@ label {
   opacity: 0.6;
   transition:
     opacity var(--timing-fast) var(--easing-standard),
-    background-color var(--timing-fast) var(--easing-standard);
+    background-color var(--timing-fast) var(--easing-standard),
+    border-color var(--timing-fast) var(--easing-standard);
   min-width: 32px;
   min-height: 32px;
 }
@@ -1423,6 +1428,34 @@ label {
 .icon-btn:active {
   transform: none;
   opacity: 0.8;
+}
+
+:root[data-theme="dark"] .icon-btn {
+  opacity: 0.92;
+  background: var(--icon-btn-bg);
+  border-color: var(--icon-btn-border);
+  box-shadow: 0 0 0 0.5px oklch(0.62 0.02 85 / 0.35);
+}
+
+:root[data-theme="dark"] .icon-btn:hover {
+  opacity: 1;
+  background: oklch(0.28 0.015 85 / 0.75);
+  border-color: oklch(0.58 0.03 85 / 0.95);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] .icon-btn {
+    opacity: 0.92;
+    background: var(--icon-btn-bg);
+    border-color: var(--icon-btn-border);
+    box-shadow: 0 0 0 0.5px oklch(0.62 0.02 85 / 0.35);
+  }
+
+  :root[data-theme="system"] .icon-btn:hover {
+    opacity: 1;
+    background: oklch(0.28 0.015 85 / 0.75);
+    border-color: oklch(0.58 0.03 85 / 0.95);
+  }
 }
 
 .history-item {

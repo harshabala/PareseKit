@@ -65,7 +65,7 @@
   },
   "dropzone": {
     "title": "Drag & drop files or folders here",
-    "hint": "Supported: .pdf, .csv, .xlsx, .xls, .tsv and more — or click below to browse",
+    "hint": "PDF, Office, spreadsheets, images, and more. Use Select Files or Select Folder below.",
     "filesReadyOne": "1 file ready to parse",
     "filesReady": "{count} files ready to parse",
     "selectFiles": "Select Files",

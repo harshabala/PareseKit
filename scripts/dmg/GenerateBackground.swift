@@ -1,10 +1,15 @@
 #!/usr/bin/env swift
-// ParseKit DMG background @2x (1280×880) — Cocoa bitmap coords: origin bottom-left, y ↑
+// ParseKit DMG background @2x — must match bundle.macOS.dmg windowSize 640×440 (→ 1280×880).
 import AppKit
 import CoreGraphics
 
-let width: CGFloat = 1280
-let height: CGFloat = 880
+// Keep in sync with src-tauri/tauri.conf.json → bundle.macOS.dmg.windowSize
+let windowW: CGFloat = 640
+let windowH: CGFloat = 440
+let scale: CGFloat = 2
+let width = windowW * scale
+let height = windowH * scale
+let marginX = scale * 32 // 32px inset at 1x (≥24px)
 
 guard
   let rep = NSBitmapImageRep(
@@ -32,7 +37,6 @@ guard let ctx = NSGraphicsContext(bitmapImageRep: rep)?.cgContext else {
 NSGraphicsContext.saveGraphicsState()
 NSGraphicsContext.current = NSGraphicsContext(cgContext: ctx, flipped: false)
 
-// Gradient (bottom → top)
 let space = CGColorSpaceCreateDeviceRGB()
 let colors = [
   CGColor(red: 0.84, green: 0.78, blue: 0.72, alpha: 1),
@@ -61,7 +65,7 @@ func fillRoundedRect(_ rect: CGRect, radius: CGFloat, fill: CGColor, stroke: CGC
   }
 }
 
-func drawSingleLine(
+func drawWrapped(
   _ text: String,
   in rect: CGRect,
   size: CGFloat,
@@ -71,7 +75,7 @@ func drawSingleLine(
 ) {
   let para = NSMutableParagraphStyle()
   para.alignment = align
-  para.lineBreakMode = .byTruncatingTail
+  para.lineBreakMode = .byWordWrapping
   let attrs: [NSAttributedString.Key: Any] = [
     .font: NSFont.systemFont(ofSize: size, weight: weight),
     .foregroundColor: color,
@@ -84,68 +88,70 @@ func drawSingleLine(
   )
 }
 
-// --- Layout (y = distance from bottom of image) ---
-let marginX: CGFloat = 100
 let centerX = width / 2
+let contentW = width - marginX * 2
 
-// Top title pill (near top of window → high y)
+// Title pill (top)
 let title = "Drag ParseKit to Applications"
-let pillW: CGFloat = 960
-let pillH: CGFloat = 76
+let pillW = min(contentW, scale * 520)
+let pillH: CGFloat = scale * 44
 let pillX = centerX - pillW / 2
-let pillY: CGFloat = height - 56 - pillH
+let pillY: CGFloat = height - scale * 28 - pillH
 fillRoundedRect(
   CGRect(x: pillX, y: pillY, width: pillW, height: pillH),
   radius: pillH / 2,
   fill: CGColor(red: 1, green: 1, blue: 1, alpha: 0.82),
   stroke: CGColor(red: 1, green: 1, blue: 1, alpha: 0.95)
 )
-drawSingleLine(
+drawWrapped(
   title,
-  in: CGRect(x: pillX + 28, y: pillY + 20, width: pillW - 56, height: pillH - 28),
-  size: 32,
+  in: CGRect(x: pillX + scale * 16, y: pillY + scale * 8, width: pillW - scale * 32, height: pillH - scale * 12),
+  size: scale * 15,
   weight: .semibold,
   color: NSColor(calibratedRed: 0.18, green: 0.16, blue: 0.14, alpha: 1),
   align: .center
 )
 
-drawSingleLine(
-  "Eject this disk, then open ParseKit from Applications",
-  in: CGRect(x: marginX, y: pillY - 52, width: width - marginX * 2, height: 40),
-  size: 21,
+// Instruction (below title, wrapped — no truncation)
+let instruction = "Eject this disk, then open ParseKit from Applications"
+let instructionH: CGFloat = scale * 44
+drawWrapped(
+  instruction,
+  in: CGRect(x: marginX, y: pillY - instructionH - scale * 8, width: contentW, height: instructionH),
+  size: scale * 11,
   weight: .regular,
   color: NSColor(calibratedRed: 0.34, green: 0.30, blue: 0.26, alpha: 0.95),
   align: .center
 )
 
-// Center card (icon drop zone)
-let cardW: CGFloat = 1040
-let cardH: CGFloat = 380
+// Center card (icon drop zone) — aligns with --icon 178 & --app-drop-link 478 @1x
+let cardW: CGFloat = scale * 520
+let cardH: CGFloat = scale * 190
 let cardX = centerX - cardW / 2
-let cardY: CGFloat = 200
+let cardY: CGFloat = scale * 100
 fillRoundedRect(
   CGRect(x: cardX, y: cardY, width: cardW, height: cardH),
-  radius: 36,
+  radius: scale * 18,
   fill: CGColor(red: 1, green: 1, blue: 1, alpha: 0.52),
   stroke: CGColor(red: 1, green: 1, blue: 1, alpha: 0.72)
 )
 
-// Chevrons — centered between icon columns (155 & 465 @1x → 310 & 930 @2x)
 let chevronAttrs: [NSAttributedString.Key: Any] = [
-  .font: NSFont.systemFont(ofSize: 48, weight: .bold),
+  .font: NSFont.systemFont(ofSize: scale * 24, weight: .bold),
   .foregroundColor: NSColor(calibratedRed: 0.40, green: 0.36, blue: 0.32, alpha: 0.42),
-  .kern: 10,
+  .kern: scale * 5,
 ]
 let chevrons = NSAttributedString(string: "›   ›   ›", attributes: chevronAttrs)
 let chevronSize = chevrons.size()
 let chevronCenterY = cardY + cardH * 0.52
 chevrons.draw(at: CGPoint(x: centerX - chevronSize.width / 2, y: chevronCenterY - chevronSize.height / 2))
 
-// Footer (bottom of window → low y)
-drawSingleLine(
-  "Opens from the menu bar — look for ParseKit (top-right)",
-  in: CGRect(x: marginX, y: 44, width: width - marginX * 2, height: 32),
-  size: 18,
+// Footer
+let footer = "Opens from the menu bar — look for ParseKit (top-right)"
+drawWrapped(
+  footer,
+  in: CGRect(x: marginX, y: scale * 22, width: contentW, height: scale * 36),
+  size: scale * 10,
   weight: .regular,
   color: NSColor(calibratedRed: 0.38, green: 0.34, blue: 0.30, alpha: 0.85),
   align: .center
@@ -161,4 +167,4 @@ guard let png = rep.representation(using: .png, properties: [:]) else {
   exit(1)
 }
 try png.write(to: outURL)
-print("Wrote \(outURL.path)")
+print("Wrote \(outURL.path) (\(Int(width))×\(Int(height)) @2x for \(Int(windowW))×\(Int(windowH)) window)")
