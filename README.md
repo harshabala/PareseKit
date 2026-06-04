@@ -57,9 +57,7 @@ The `sidecar/` Node package is **dev-only** for testing the JSON protocol; the s
 `src-tauri/binaries/` is not committed. Before packaging or distributing:
 
 ```bash
-npm run build
-npm run build:sidecar   # produces src-tauri/binaries/parsedock-sidecar-<host-triple>
-npm run tauri build
+npm run release:macos   # build + scripts/postbuild-macos.sh (sign, strict verify, DMG)
 ```
 
 Build on each target platform (Apple Silicon vs Intel Mac) so the correct host triple is embedded in the sidecar filename.
@@ -67,21 +65,22 @@ Build on each target platform (Apple Silicon vs Intel Mac) so the correct host t
 Output (Apple Silicon example):
 
 - App: `src-tauri/target/release/bundle/macos/ParseDock.app`
-- DMG: `src-tauri/target/release/bundle/dmg/ParseDock_0.1.1_aarch64.dmg` (exact name may vary by Tauri version)
+- DMG: `src-tauri/target/release/bundle/dmg/ParseDock_<version>_aarch64.dmg`
 
-### Install from DMG (unsigned / ad-hoc)
+### Install from DMG (ad-hoc signed, not notarized)
 
-Release builds are not notarized. After opening the DMG, if macOS blocks the app:
+The release `.app` is ad-hoc signed with sealed resources (`codesign --verify --deep --strict` passes on the build artifact). Gatekeeper may still require a one-time approval for downloaded DMGs.
 
-1. Drag **ParseDock** to Applications.
-2. Optional ad-hoc sign (reduces Gatekeeper friction for local use):
+1. Drag **ParseDock** to **Applications**.
+2. Clear Finder xattrs the installer adds (does not modify Mach-O):
 
 ```bash
-codesign --force --deep --sign - /Applications/ParseDock.app
 xattr -cr /Applications/ParseDock.app
+xattr -d com.apple.FinderInfo /Applications/ParseDock.app 2>/dev/null || true
 ```
 
-3. First launch: **System Settings → Privacy & Security → Open Anyway**, or right-click the app → **Open**.
+3. **First launch:** Right-click **ParseDock** → **Open** → confirm, or use **Privacy & Security → Open Anyway**.
+4. Use the **blue P** icon in the **menu bar** (top-right). ParseDock is menu-bar-only (`LSUIElement`); it does not remain in the Dock.
 
 Popover debug traces (`/tmp/parsedock-popover-trace.log`) are written only in **debug** builds, not in release.
 

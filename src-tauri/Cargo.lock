@@ -2963,7 +2963,7 @@ dependencies = [
 
 [[package]]
 name = "parsedock"
-version = "0.1.4"
+version = "0.1.5"
 dependencies = [
  "liteparse",
  "objc2",
