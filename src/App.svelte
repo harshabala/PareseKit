@@ -33,6 +33,8 @@
   import {
     bannerFlyIn,
     bannerFlyOut,
+    buttonFadeIn,
+    buttonFadeOut,
     panelFadeIn,
     panelFadeOut,
     panelFlyIn,
@@ -51,6 +53,8 @@
   const bannerFlyOutParams = $derived(bannerFlyOut(reducedMotion));
   const sectionFlyInParams = $derived(sectionFlyIn(reducedMotion));
   const sectionFlyOutParams = $derived(sectionFlyOut(reducedMotion));
+  const buttonFadeInParams = $derived(buttonFadeIn(reducedMotion));
+  const buttonFadeOutParams = $derived(buttonFadeOut(reducedMotion));
 
   let inputDir = $state("");
   let selectedFiles = $state<string[]>([]);
@@ -480,7 +484,13 @@
           <FormatSelector value={format} onChange={handleFormatChange} />
         </div>
         {#if format !== "json"}
-          <div class="file-count-preview caption-hint">{t("config.spreadsheetJsonHint")}</div>
+          <div
+            class="file-count-preview caption-hint"
+            in:fade={mainFadeIn}
+            out:fade={mainFadeOut}
+          >
+            {t("config.spreadsheetJsonHint")}
+          </div>
         {/if}
 
         <div class="row ocr-row">
@@ -513,20 +523,24 @@
     {/if}
 
     <div class="section run-section">
-      {#if isParsing}
-        <button type="button" class="secondary run-parse-btn" onclick={cancelParse}>
-          {t("run.cancel")}
-        </button>
-      {:else}
-        <button
-          type="button"
-          class="run-parse-btn"
-          disabled={!canRunParse}
-          onclick={startParse}
-        >
-          {t("run.runParse")}
-        </button>
-      {/if}
+      {#key isParsing}
+        <div in:fade={buttonFadeInParams} out:fade={buttonFadeOutParams}>
+          {#if isParsing}
+            <button type="button" class="secondary run-parse-btn" onclick={cancelParse}>
+              {t("run.cancel")}
+            </button>
+          {:else}
+            <button
+              type="button"
+              class="run-parse-btn"
+              disabled={!canRunParse}
+              onclick={startParse}
+            >
+              {t("run.runParse")}
+            </button>
+          {/if}
+        </div>
+      {/key}
       {#if noticeMsg}
         <div
           class="notice-banner"
@@ -548,24 +562,30 @@
         </div>
       {/if}
       {#if !isParsing && files.length > 0 && files.some((f) => f.status === "done")}
-        <div class="row" style="margin-top: 8px;">
-          <button type="button" class="secondary" style="flex: 1" onclick={() => openFolder(outputDir)}>
-            {t("run.openOutput")}
-          </button>
-          <button type="button" class="secondary" style="flex: 1" onclick={copyOutputPath}>
-            {t("run.copyOutputPath")}
-          </button>
+        <div in:fly={sectionFlyInParams} out:fly={sectionFlyOutParams}>
+          <div class="row" style="margin-top: 8px;">
+            <button type="button" class="secondary" style="flex: 1" onclick={() => openFolder(outputDir)}>
+              {t("run.openOutput")}
+            </button>
+            <button type="button" class="secondary" style="flex: 1" onclick={copyOutputPath}>
+              {t("run.copyOutputPath")}
+            </button>
+          </div>
         </div>
-        <div class="row" style="margin-top: 8px;">
-          <button type="button" class="secondary" style="flex: 1" onclick={copyToClipboard}>
-            {t("run.copyLast")}
-          </button>
+        <div in:fly={sectionFlyInParams} out:fly={sectionFlyOutParams}>
+          <div class="row" style="margin-top: 8px;">
+            <button type="button" class="secondary" style="flex: 1" onclick={copyToClipboard}>
+              {t("run.copyLast")}
+            </button>
+          </div>
         </div>
       {/if}
     </div>
 
     {#if !isParsing}
-      <RecentBatches batches={recentBatches} onOpenFolder={openFolder} />
+      <div in:fade={mainFadeIn} out:fade={mainFadeOut}>
+        <RecentBatches batches={recentBatches} onOpenFolder={openFolder} />
+      </div>
     {/if}
   </main>
         </div>

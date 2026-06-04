@@ -120,3 +120,13 @@ export function sectionFlyOut(prefersReduced: boolean) {
     easing: easingAccelerate,
   };
 }
+
+/** Run/cancel button crossfade enter: 180ms decelerate */
+export function buttonFadeIn(prefersReduced: boolean) {
+  return panelFadeIn(prefersReduced);
+}
+
+/** Run/cancel button crossfade exit: 120ms accelerate */
+export function buttonFadeOut(prefersReduced: boolean) {
+  return panelFadeOut(prefersReduced);
+}
