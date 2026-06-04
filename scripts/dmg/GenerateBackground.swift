@@ -90,12 +90,16 @@ func drawWrapped(
 
 let centerX = width / 2
 let contentW = width - marginX * 2
+// Finder often clips the right edge of DMG backgrounds — shift copy ~45% left of center.
+let textShiftLeft = (width / 2 - marginX) * 0.45
+let textLeft = marginX
+let textBlockW = contentW - textShiftLeft
 
-// Title pill (top)
+// Title pill (top, left-weighted so nothing clips on the right)
 let title = "Drag ParseKit to Applications"
-let pillW = min(contentW, scale * 520)
+let pillW = min(textBlockW, scale * 480)
 let pillH: CGFloat = scale * 44
-let pillX = centerX - pillW / 2
+let pillX = textLeft
 let pillY: CGFloat = height - scale * 28 - pillH
 fillRoundedRect(
   CGRect(x: pillX, y: pillY, width: pillW, height: pillH),
@@ -109,19 +113,19 @@ drawWrapped(
   size: scale * 15,
   weight: .semibold,
   color: NSColor(calibratedRed: 0.18, green: 0.16, blue: 0.14, alpha: 1),
-  align: .center
+  align: .left
 )
 
-// Instruction (below title, wrapped — no truncation)
+// Instruction (below title)
 let instruction = "Eject this disk, then open ParseKit from Applications"
 let instructionH: CGFloat = scale * 44
 drawWrapped(
   instruction,
-  in: CGRect(x: marginX, y: pillY - instructionH - scale * 8, width: contentW, height: instructionH),
+  in: CGRect(x: textLeft, y: pillY - instructionH - scale * 8, width: textBlockW, height: instructionH),
   size: scale * 11,
   weight: .regular,
   color: NSColor(calibratedRed: 0.34, green: 0.30, blue: 0.26, alpha: 0.95),
-  align: .center
+  align: .left
 )
 
 // Center card (icon drop zone) — aligns with --icon 178 & --app-drop-link 478 @1x
@@ -150,11 +154,11 @@ chevrons.draw(at: CGPoint(x: centerX - chevronSize.width / 2, y: chevronCenterY 
 let footer = "Opens from the menu bar — look for ParseKit (top-right)"
 drawWrapped(
   footer,
-  in: CGRect(x: marginX, y: scale * 22, width: contentW, height: scale * 36),
+  in: CGRect(x: textLeft, y: scale * 22, width: textBlockW, height: scale * 36),
   size: scale * 10,
   weight: .regular,
   color: NSColor(calibratedRed: 0.38, green: 0.34, blue: 0.30, alpha: 0.85),
-  align: .center
+  align: .left
 )
 
 NSGraphicsContext.restoreGraphicsState()

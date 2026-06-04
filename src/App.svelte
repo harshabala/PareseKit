@@ -695,7 +695,7 @@
     <span>{t("app.name")}</span>
     <div class="header-actions">
       <button
-        class="icon-btn"
+        class="icon-btn icon-btn-settings"
         onclick={openSettings}
         title={t("header.settings")}
         aria-label={t("header.settings")}

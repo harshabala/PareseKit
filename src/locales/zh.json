@@ -64,7 +64,7 @@
   },
   "dropzone": {
     "title": "拖放文件或文件夹到此处",
-    "hint": "支持 PDF、Office、表格、图片等。请使用下方的「选择文件」或「选择文件夹」。",
+    "hint": "支持：.pdf、.csv、.xlsx、.xls、.tsv 等。",
     "filesReadyOne": "1 个文件待解析",
     "filesReady": "{count} 个文件待解析",
     "selectFiles": "选择文件",

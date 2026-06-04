@@ -64,7 +64,7 @@
   },
   "dropzone": {
     "title": "Arrastra y suelta archivos o carpetas aquí",
-    "hint": "PDF, Office, hojas de cálculo, imágenes y más. Usa Seleccionar archivos o Seleccionar carpeta abajo.",
+    "hint": "Compatible: .pdf, .csv, .xlsx, .xls, .tsv y más.",
     "filesReadyOne": "1 archivo listo para analizar",
     "filesReady": "{count} archivos listos para analizar",
     "selectFiles": "Seleccionar archivos",
