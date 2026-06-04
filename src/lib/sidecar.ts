@@ -32,25 +32,24 @@ export interface ParseRunHandle {
 }
 
 function friendlySidecarMessage(raw: string): string {
-  const lower = raw.toLowerCase();
+  const trimmed = raw.trim();
+  const lower = trimmed.toLowerCase();
   if (lower.includes("imagemagick")) {
     return "ImageMagick is required for images. Install with: brew install imagemagick";
   }
   if (lower.includes("libreoffice")) {
     return "LibreOffice is required for Office documents. Install with: brew install --cask libreoffice";
   }
-  if (
-    lower.includes("not allowed") ||
-    lower.includes("permission") ||
-    lower.includes("shell:allow-spawn") ||
-    lower.includes("shell:allow-stdin-write")
-  ) {
-    return "Parse engine permission denied. Restart the app after rebuilding (npm run tauri:dev).";
+  if (lower.includes("not allowed by acl") || lower.includes("shell:allow-spawn")) {
+    return `Parse engine blocked by app permissions. Quit ParseDock, reinstall the latest build, then try again. (${trimmed})`;
   }
-  if (lower.includes("sidecar") || lower.includes("not found")) {
-    return "Parse engine could not start. Rebuild the app or run npm run build:sidecar in dev.";
+  if (lower.includes("sidecar not configured")) {
+    return `Parse engine misconfigured. Rebuild with npm run build:sidecar. (${trimmed})`;
   }
-  return raw;
+  if (lower.includes("failed to create the path to the command")) {
+    return `Parse engine binary missing next to the app. Run npm run build:sidecar, then restart. (${trimmed})`;
+  }
+  return trimmed || "Parse engine failed to start (unknown error).";
 }
 
 export function runParse(
@@ -73,7 +72,9 @@ export function runParse(
       const command = Command.sidecar("binaries/parsedock-sidecar");
 
       command.on("error", (error) => {
-        const message = friendlySidecarMessage(String(error));
+        const raw = String(error);
+        console.error("[sidecar spawn error]", raw);
+        const message = friendlySidecarMessage(raw);
         onEvent({ type: "error", message });
         finish(() => reject(new Error(message)));
       });
@@ -111,7 +112,9 @@ export function runParse(
       child = await command.spawn();
       await child.write(JSON.stringify(config) + "\n");
     } catch (err) {
-      const message = friendlySidecarMessage(String(err));
+      const raw = String(err);
+      console.error("[sidecar run error]", raw);
+      const message = friendlySidecarMessage(raw);
       onEvent({ type: "error", message });
       finish(() => reject(new Error(message)));
     }
