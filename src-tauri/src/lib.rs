@@ -22,7 +22,7 @@ use walkdir::WalkDir;
 const TRAY_ICON: tauri::image::Image<'static> = tauri::include_image!("icons/tray/icon.png");
 /// Ignore focus-loss hides briefly after `Window.show()` so activation does not collapse the panel.
 /// Just long enough to ride out activation focus churn; short enough that click-away still dismisses.
-const POPOVER_SHOW_GRACE_MS: u64 = 750;
+const POPOVER_SHOW_GRACE_MS: u64 = 900;
 
 /// Set `false` only when diagnosing focus-loss; production should keep `true`.
 const FOCUS_LOSS_AUTO_HIDE_ENABLED: bool = true;
@@ -211,6 +211,8 @@ fn show_popover<R: Runtime>(
     popover: &PopoverState,
 ) {
     popover_trace("PopoverManager.show()");
+    // Start grace before any show/focus work so tray-click focus-loss cannot instantly hide.
+    popover.mark_opening();
 
     // Center first so the panel is on-screen even if tray coordinates are wrong.
     let _ = window.center();
@@ -253,13 +255,11 @@ fn toggle_popover_from_tray<R: Runtime>(
     popover: &PopoverState,
 ) {
     popover_trace("PopoverManager.toggle()");
-    let visible = window.is_visible().unwrap_or(false);
-    let focused = window.is_focused().unwrap_or(false);
-    if visible && focused {
-        popover_trace("toggle: branch hide (visible and focused)");
+    if window.is_visible().unwrap_or(false) {
+        popover_trace("toggle: branch hide (visible)");
         hide_popover(window);
     } else {
-        popover_trace("toggle: branch show (hidden or not focused)");
+        popover_trace("toggle: branch show (hidden)");
         show_popover(window, Some(rect), popover);
     }
 }

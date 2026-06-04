@@ -28,7 +28,7 @@ pub fn ensure_popover_window_configured<R: tauri::Runtime>(window: &WebviewWindo
 #[cfg(target_os = "macos")]
 pub(crate) fn activate_app_for_popover<R: tauri::Runtime>(
     window: &WebviewWindow<R>,
-    popover: &crate::PopoverState,
+    _popover: &crate::PopoverState,
 ) {
     popover_trace("Activation: start");
     ensure_popover_window_configured(window);
@@ -38,8 +38,6 @@ pub(crate) fn activate_app_for_popover<R: tauri::Runtime>(
         let _ = window.show();
         popover_trace("Window.focus()");
         let _ = window.set_focus();
-        popover.mark_opening();
-        popover_trace("show: grace period started (mark_opening after Window.show)");
         return;
     };
     let app = NSApplication::sharedApplication(mtm);
@@ -59,10 +57,7 @@ pub(crate) fn activate_app_for_popover<R: tauri::Runtime>(
     let _ = window.show();
     popover_trace("Window.focus()");
     let _ = window.set_focus();
-    popover.mark_opening();
-    popover_trace("show: grace period started (mark_opening after Window.show)");
     popover_trace("Activation: complete");
-    // Tray-open path re-blocks in TrayGuard; keep block until paired mouse-up finishes.
 }
 
 /// Configure the webview window as a floating popover (above menu bar, all spaces).
@@ -97,8 +92,6 @@ pub(crate) fn activate_app_for_popover<R: tauri::Runtime>(
     let _ = window.show();
     popover_trace("Window.focus()");
     let _ = window.set_focus();
-    popover.mark_opening();
-    popover_trace("show: grace period started (mark_opening after Window.show)");
 }
 
 #[cfg(not(target_os = "macos"))]
