@@ -97,6 +97,14 @@
     --timing-normal: 0ms;
     --timing-slow: 0ms;
   }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 
 * {
@@ -492,7 +500,12 @@ label {
 
 .status-parsing {
   color: var(--accent-color);
-  animation: spin 1s linear infinite;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .status-parsing {
+    animation: spin 1s linear infinite;
+  }
 }
 
 @keyframes spin {
