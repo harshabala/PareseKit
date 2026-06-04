@@ -22,6 +22,28 @@
     total > 0 ? Math.round((finishedCount / total) * 100) : 0
   );
 
+  let showCompletePulse = $state(false);
+  let prevIsParsing = $state(false);
+  let pulseTimer: ReturnType<typeof setTimeout> | undefined;
+
+  $effect(() => {
+    const justFinished = prevIsParsing && !isParsing;
+    const parseComplete =
+      total > 0 && (progressPercent >= 100 || finishedCount >= total);
+
+    if (justFinished && parseComplete && !reducedMotion) {
+      showCompletePulse = true;
+      clearTimeout(pulseTimer);
+      pulseTimer = setTimeout(() => {
+        showCompletePulse = false;
+      }, 400);
+    }
+
+    prevIsParsing = isParsing;
+
+    return () => clearTimeout(pulseTimer);
+  });
+
   function statusIcon(status: string): string {
     switch (status) {
       case "parsing":
@@ -49,7 +71,11 @@
     </div>
 
     <div class="progress-bar" role="progressbar" aria-valuenow={progressPercent} aria-valuemin={0} aria-valuemax={100}>
-      <div class="progress-fill" style="transform: scaleX({progressPercent / 100})"></div>
+      <div
+        class="progress-fill"
+        class:progress-fill-complete={showCompletePulse}
+        style="transform: scaleX({progressPercent / 100})"
+      ></div>
     </div>
     <div class="progress-percent">{progressPercent}%</div>
 

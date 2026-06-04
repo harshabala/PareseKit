@@ -371,6 +371,24 @@ label {
   transition: transform var(--timing-slow) var(--easing-decelerate);
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .progress-fill.progress-fill-complete {
+    animation: progressCompletePulse 300ms var(--easing-standard) 1;
+  }
+}
+
+@keyframes progressCompletePulse {
+  0% {
+    filter: brightness(1);
+  }
+  45% {
+    filter: brightness(1.25);
+  }
+  100% {
+    filter: brightness(1);
+  }
+}
+
 .progress-header {
   align-items: baseline;
 }
