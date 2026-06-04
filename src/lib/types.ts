@@ -23,6 +23,8 @@ export interface BatchResult {
   fileCount: number;
   parsed: number;
   errors: number;
+  /** Present when batch used explicit file selection (for re-run). */
+  sourcePaths?: string[];
 }
 
 export const MAX_RECENT_BATCHES = 10;

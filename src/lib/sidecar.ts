@@ -105,13 +105,14 @@ export function runParse(
       });
 
       command.on("close", (data) => {
-        if (data.code !== 0 && data.code !== null) {
-          const message = friendlySidecarMessage(
-            stderrTail.trim() || `Sidecar exited with code ${data.code}`
-          );
-          onEvent({ type: "error", message });
-          finish(() => reject(new Error(message)));
-        }
+        if (settled) return;
+        const exitHint =
+          data.code != null && data.code !== 0
+            ? `Sidecar exited with code ${data.code}`
+            : "Parse engine stopped before the batch finished.";
+        const message = friendlySidecarMessage(stderrTail.trim() || exitHint);
+        onEvent({ type: "error", message });
+        finish(() => reject(new Error(message)));
       });
 
       child = await command.spawn();

@@ -11,7 +11,8 @@ ParseKit — a toolkit for parsing documents. A lightweight macOS menu-bar app t
 - **Smart Markdown** — document titles, page headers, and separators
 - **OCR built-in** — powered by LiteParse v2’s native Tesseract engine, works offline
 - **LiteParse v2** — Rust core for up to ~100× faster parsing on small docs
-- **100% local** — your documents never leave your machine
+- **On-device parsing** — no cloud upload; optional one-time Tesseract language data download when OCR is on
+- **Automatic updates** — checks GitHub Releases on launch; in-app banner to install (menu-bar friendly, no system dialog)
 - **Dark mode** — follows macOS system preference
 
 ## Supported Formats
@@ -57,10 +58,41 @@ The `sidecar/` Node package is **dev-only** for testing the JSON protocol; the s
 `src-tauri/binaries/` is not committed. Before packaging or distributing:
 
 ```bash
-npm run release:macos   # build + scripts/postbuild-macos.sh (sign, strict verify, DMG)
+npm run release:macos    # build + scripts/postbuild-macos.sh (sign, strict verify, DMG)
+npm run publish:macos    # release build + sign updater bundle + upload to GitHub Releases
 ```
 
 Build on each target platform (Apple Silicon vs Intel Mac) so the correct host triple is embedded in the sidecar filename.
+
+### Automatic updates
+
+ParseKit includes the [Tauri v2 updater](https://v2.tauri.app/plugin/updater/). On launch (and via **Settings → Updates → Check for updates**), the app fetches a manifest from GitHub Releases:
+
+`https://github.com/harshabala/parsedock/releases/latest/download/parsekit-latest.json`
+
+When a newer version is available, a gold banner appears in the popover: **Install & Restart** or **Later**. Updates download a signed `.app.tar.gz` and replace the app bundle (not the DMG installer flow).
+
+**Publishing a release (maintainers):**
+
+1. Generate a signing key once (keep private key local, never commit):
+
+   ```bash
+   npx tauri signer generate -w ~/.tauri/parsekit.key -f --ci -p ''
+   ```
+
+2. The public key is already in `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`).
+
+3. Build and upload:
+
+   ```bash
+   export TAURI_SIGNING_PRIVATE_KEY="$HOME/.tauri/parsekit.key"
+   export TAURI_SIGNING_PRIVATE_KEY_PASSWORD=""
+   RELEASE_NOTES="ParseKit v0.2.1 — …" npm run publish:macos
+   ```
+
+   This uploads the DMG, `ParseKit_<version>_aarch64.app.tar.gz`, and `parsekit-latest.json` to the `v<version>` GitHub release. The repo must be **public** so clients can download assets without authentication.
+
+**Note:** GitHub serves `latest.json` as 404; the manifest must be named **`parsekit-latest.json`**.
 
 Output (Apple Silicon example):
 
@@ -71,7 +103,9 @@ Output (Apple Silicon example):
 
 The release `.app` is ad-hoc signed with sealed resources (`codesign --verify --deep --strict` passes on the build artifact). Gatekeeper may still require a one-time approval for downloaded DMGs.
 
-1. Drag **ParseKit** to **Applications**.
+The DMG opens a guided installer window: **“Drag ParseKit to Applications”** with a frosted layout, arrow cue, and icon labels (same idea as modern app installers). Finder cannot animate that window live — the guidance is baked into the background art.
+
+1. Drag **ParseKit** to **Applications** (not Desktop or Downloads). Quit any copy running from the DMG, then open **ParseKit** from Applications only.
 2. Clear Finder xattrs the installer adds (does not modify Mach-O):
 
 ```bash
@@ -99,9 +133,9 @@ ParseKit uses [LiteParse v2](https://github.com/run-llama/liteparse) by LlamaInd
 
 ParseKit is designed with privacy as a core principle:
 
-- All processing happens locally on your machine
+- **On-device parsing — no cloud upload.** Files are read and written only on your Mac.
 - No telemetry, no analytics, no tracking
-- No network requests during parsing (optional first-run Tesseract language data may download when OCR is enabled)
+- No network during parsing except optional Tesseract language data (OCR) and optional update checks when you use automatic updates
 - Your documents are never uploaded anywhere
 
 ## License

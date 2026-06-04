@@ -6,10 +6,12 @@
   let {
     batches,
     onOpenFolder,
+    onRerun,
     onClose,
   }: {
     batches: BatchResult[];
     onOpenFolder: (path: string) => void;
+    onRerun: (batch: BatchResult) => void;
     onClose: () => void;
   } = $props();
 
@@ -33,7 +35,7 @@
       <p class="settings-hint">{t("history.empty")}</p>
     {:else}
       <p class="settings-hint">{t("history.hint", { count: batches.length })}</p>
-      <BatchHistoryList {batches} {onOpenFolder} />
+      <BatchHistoryList {batches} {onOpenFolder} {onRerun} />
     {/if}
   </div>
 </div>

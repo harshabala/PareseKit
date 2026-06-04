@@ -27,6 +27,8 @@ fn main() {
             parsekit_lib::startup_trace(
                 "single-instance guard: another ParseKit is running, exiting",
             );
+            #[cfg(target_os = "macos")]
+            parsekit_lib::macos_open_files::forward_argv_from_duplicate_instance();
             notify_already_running();
             return;
         }

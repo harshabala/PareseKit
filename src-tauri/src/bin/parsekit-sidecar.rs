@@ -10,7 +10,11 @@ use serde_json::json;
 use std::io::{self, BufRead, Write};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::Semaphore;
+
+/// Per-file ceiling so a hung OCR/PDF cannot block the whole batch indefinitely.
+const FILE_PARSE_TIMEOUT: Duration = Duration::from_secs(300);
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -78,8 +82,9 @@ async fn process_file(
     }));
 
     let parser = LiteParse::new(lp_config);
-    match parser.parse(&file_path).await {
-        Ok(result) => {
+    let parse_fut = parser.parse(&file_path);
+    match tokio::time::timeout(FILE_PARSE_TIMEOUT, parse_fut).await {
+        Ok(Ok(result)) => {
             let content = format_output(&result, &base_name, &format, is_spreadsheet);
             if let Err(e) = tokio::fs::write(&out_path, content).await {
                 emit(json!({
@@ -100,13 +105,26 @@ async fn process_file(
             }));
             "completed"
         }
-        Err(e) => {
+        Ok(Err(e)) => {
             emit(json!({
                 "type": "progress",
                 "file": file_name,
                 "sourcePath": file_path,
                 "status": "error",
                 "error": e.to_string(),
+            }));
+            "error"
+        }
+        Err(_) => {
+            emit(json!({
+                "type": "progress",
+                "file": file_name,
+                "sourcePath": file_path,
+                "status": "error",
+                "error": format!(
+                    "Timed out after {} seconds",
+                    FILE_PARSE_TIMEOUT.as_secs()
+                ),
             }));
             "error"
         }

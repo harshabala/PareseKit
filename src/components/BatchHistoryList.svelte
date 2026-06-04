@@ -5,10 +5,21 @@
   let {
     batches,
     onOpenFolder,
+    onRerun,
   }: {
     batches: BatchResult[];
     onOpenFolder: (path: string) => void;
+    onRerun?: (batch: BatchResult) => void;
   } = $props();
+
+  function canRerun(batch: BatchResult): boolean {
+    if (!onRerun) return false;
+    const selectedLabel = t("recent.selectedFiles");
+    return (
+      (batch.sourcePaths?.length ?? 0) > 0 ||
+      (!!batch.inputDir && batch.inputDir !== selectedLabel)
+    );
+  }
 
   function formatDate(timestamp: string): string {
     try {
@@ -39,20 +50,36 @@
         <div class="history-info">
           <span class="history-name">{batchLabel(batch)}</span>
           <span class="history-meta">
-            {t("recent.meta", {
-              date: formatDate(batch.timestamp),
-              count: batch.fileCount,
-              format: batch.format.toUpperCase(),
-            })}
+            {batch.fileCount === 1
+              ? t("recent.metaOne", {
+                  date: formatDate(batch.timestamp),
+                  format: batch.format.toUpperCase(),
+                })
+              : t("recent.meta", {
+                  date: formatDate(batch.timestamp),
+                  count: batch.fileCount,
+                  format: batch.format.toUpperCase(),
+                })}
           </span>
         </div>
-        <button
-          type="button"
-          class="secondary history-open-btn"
-          onclick={() => onOpenFolder(batch.outputDir)}
-        >
-          {t("recent.open")}
-        </button>
+        <div class="history-actions">
+          {#if canRerun(batch)}
+            <button
+              type="button"
+              class="secondary history-rerun-btn"
+              onclick={() => onRerun?.(batch)}
+            >
+              {t("history.rerun")}
+            </button>
+          {/if}
+          <button
+            type="button"
+            class="secondary history-open-btn"
+            onclick={() => onOpenFolder(batch.outputDir)}
+          >
+            {t("recent.open")}
+          </button>
+        </div>
       </div>
       {#if batch.errors > 0}
         <span class="history-meta history-meta-error">

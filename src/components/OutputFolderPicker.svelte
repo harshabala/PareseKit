@@ -1,14 +1,11 @@
 <script lang="ts">
   import { t } from "../lib/i18n.svelte";
   import { pickOutputFolder } from "../lib/picker";
+  import { truncatePath } from "../lib/pathDisplay";
 
   let { value, onSelect }: { value: string; onSelect: (path: string) => void } = $props();
 
-  function displayName(path: string): string {
-    if (!path) return t("config.downloads");
-    const parts = path.split(/[/\\]/).filter(Boolean);
-    return parts[parts.length - 1] ?? path;
-  }
+  const displayPath = $derived(value ? truncatePath(value, 40) : t("config.downloads"));
 
   async function pick() {
     const selected = await pickOutputFolder();
@@ -30,8 +27,13 @@
     </svg>
     <span>{t("config.outputFolder")}</span>
   </div>
-  <div class="output-folder-value" title={value}>
-    <span class="output-folder-chip">{displayName(value)}</span>
-    <button type="button" class="secondary output-folder-change" onclick={pick}>{t("config.change")}</button>
-  </div>
+  <button
+    type="button"
+    class="output-folder-path-btn"
+    title={value || t("config.downloads")}
+    onclick={pick}
+  >
+    <span class="output-folder-path-text">{displayPath}</span>
+    <span class="output-folder-change-label">{t("config.change")}</span>
+  </button>
 </div>

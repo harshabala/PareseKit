@@ -32,12 +32,10 @@ echo "[4/6] Verify signature (strict) ..."
 codesign --verify --deep --strict --verbose=2 "$STAGE_APP"
 codesign -dv --verbose=2 "$STAGE_APP" 2>&1
 
-# DMG from staged signed copy (target/ path picks up FinderInfo and breaks strict verify).
+# Styled DMG (background art + drag-to-Applications layout via create-dmg).
 if [[ -d "$DMG_DIR" ]]; then
-  echo "[5/6] Recreate DMG from signed staged .app ..."
-  rm -f "$DMG_OUT"
-  VOLNAME="ParseKit-${VERSION}"
-  hdiutil create -volname "$VOLNAME" -srcfolder "$STAGE_APP" -ov -format UDZO "$DMG_OUT"
+  echo "[5/6] Build styled DMG (ParseKit installer window) ..."
+  bash "$ROOT/scripts/dmg/build-dmg.sh" "$STAGE_APP"
   echo "DMG written: $DMG_OUT"
   DMG_MOUNT="$(mktemp -d /tmp/parsekit-dmg-verify.XXXXXX)"
   hdiutil attach -nobrowse -readonly -mountpoint "$DMG_MOUNT" "$DMG_OUT" >/dev/null
