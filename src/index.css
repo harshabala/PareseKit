@@ -192,10 +192,39 @@ body {
   line-height: 1.4;
   color: var(--text-color);
   background: transparent;
-  user-select: none;
   overflow: hidden;
   min-height: 100vh;
   font-synthesis: none;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent-color) 35%, transparent);
+  color: var(--text-primary);
+}
+
+.shell,
+header,
+.section-title,
+.config-summary-chip,
+.file-status-badge .status-label,
+.parse-spinner {
+  user-select: none;
+}
+
+.selectable-content {
+  user-select: text;
+}
+
+.settings-scroll,
+.about-scroll,
+.error-banner,
+.notice-banner,
+.deps-brew-hint,
+.deps-error,
+.file-error,
+.gatekeeper-actions code,
+.settings-hint--multiline {
+  user-select: text;
 }
 
 .boot-fallback {
@@ -539,7 +568,7 @@ label {
   background: var(--accent-color);
   transform-origin: left;
   transform: scaleX(0);
-  transition: transform var(--timing-slow) var(--easing-decelerate);
+  transition: transform var(--timing-fast) linear;
 }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -688,7 +717,7 @@ label {
   position: relative;
   flex: 1;
   min-width: 0;
-  height: 32px;
+  min-height: 44px;
   display: flex;
   align-items: center;
 }
@@ -716,7 +745,8 @@ label {
   z-index: 1;
   width: 100%;
   margin: 0;
-  height: 32px;
+  min-height: 44px;
+  height: 100%;
   background: transparent;
   -webkit-appearance: none;
   appearance: none;
@@ -736,9 +766,9 @@ label {
 
 .workers-slider-input::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  margin-top: -7px;
+  width: 22px;
+  height: 22px;
+  margin-top: -9px;
   border-radius: 50%;
   border: 0.5px solid var(--border-color);
   background: var(--glass-bg);
@@ -752,8 +782,8 @@ label {
 }
 
 .workers-slider-input::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
+  width: 22px;
+  height: 22px;
   border-radius: 50%;
   border: 0.5px solid var(--border-color);
   background: var(--glass-bg);
@@ -1964,6 +1994,7 @@ button.config-collapse-btn:focus-visible {
   font-size: 12px;
   text-decoration: none;
   margin-top: 4px;
+  text-underline-offset: 2px;
 }
 
 .settings-repo-link:hover {
@@ -2081,6 +2112,7 @@ button.config-collapse-btn:focus-visible {
   color: var(--text-primary);
   margin: 0;
   line-height: 1.45;
+  text-wrap: balance;
 }
 
 .about-body {
@@ -2103,10 +2135,11 @@ button.config-collapse-btn:focus-visible {
 .about-section-title {
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--text-secondary);
   margin: 0;
+  text-wrap: balance;
 }
 
 .about-list {

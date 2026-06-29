@@ -43,6 +43,7 @@
   import UpdateBanner from "./components/UpdateBanner.svelte";
   import { checkForUpdate, installUpdate, type UpdateInfo } from "./lib/update";
   import { pickOutputFolder } from "./lib/picker";
+  import { warmDependencies } from "./lib/depsCache";
   import {
     bannerFlyIn,
     bannerFlyOut,
@@ -816,6 +817,8 @@
       <button
         class="icon-btn icon-btn-settings"
         onclick={openSettings}
+        onmouseenter={warmDependencies}
+        onfocusin={warmDependencies}
         title={t("header.settings")}
         aria-label={t("header.settings")}
       >

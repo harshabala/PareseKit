@@ -3,6 +3,7 @@
   import { fade, fly, slide } from "svelte/transition";
   import { prefersReducedMotion } from "svelte/motion";
   import { invoke } from "@tauri-apps/api/core";
+  import { takeCachedDependencies, type DepStatus } from "../lib/depsCache";
   import { t } from "../lib/i18n.svelte";
   import { depRowAriaLabel } from "../lib/depsAria";
   import {
@@ -12,14 +13,6 @@
     MOTION_DEPS_ENTER_MS,
     rowFlyOut,
   } from "../lib/motion";
-
-  interface DepStatus {
-    id: string;
-    labelKey: string;
-    installed: boolean;
-    optional: boolean;
-    brewHint: string;
-  }
 
   const reducedMotion = $derived(prefersReducedMotion.current);
   const listSlide = $derived({
@@ -51,6 +44,17 @@
   async function refresh(options?: { initial?: boolean }) {
     const initial = options?.initial ?? false;
     error = null;
+
+    // Only consume prefetch cache on first settings load; Recheck always hits check_dependencies.
+    if (initial) {
+      const cached = takeCachedDependencies();
+      if (cached) {
+        deps = cached;
+        loading = false;
+        listVisible = true;
+        return;
+      }
+    }
 
     if (!initial && deps.length > 0) {
       listVisible = false;
