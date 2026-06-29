@@ -19,6 +19,18 @@ if [[ ! -f "$OUT" && -f "$LEGACY" ]]; then
   chmod +x "$OUT"
   echo "Bootstrapped $OUT from legacy sidecar (will rebuild if sources changed)"
 fi
+
+if [[ ! -f "$OUT" ]]; then
+  for app in "/Applications/ParseKit.app" "${HOME}/Applications/ParseKit.app"; do
+    bundled="${app}/Contents/MacOS/parsekit-sidecar"
+    if [[ -x "$bundled" ]]; then
+      cp "$bundled" "$OUT"
+      chmod +x "$OUT"
+      echo "Bootstrapped $OUT from installed $app (will rebuild if sources changed)"
+      break
+    fi
+  done
+fi
 SOURCES=(
   src-tauri/src/bin/parsekit-sidecar.rs
   src-tauri/src/sidecar_helpers.rs
