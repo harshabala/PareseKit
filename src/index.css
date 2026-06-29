@@ -745,7 +745,8 @@ label {
   z-index: 1;
   width: 100%;
   margin: 0;
-  height: 32px;
+  min-height: 44px;
+  height: 100%;
   background: transparent;
   -webkit-appearance: none;
   appearance: none;
@@ -767,7 +768,7 @@ label {
   -webkit-appearance: none;
   width: 22px;
   height: 22px;
-  margin-top: -7px;
+  margin-top: -9px;
   border-radius: 50%;
   border: 0.5px solid var(--border-color);
   background: var(--glass-bg);
