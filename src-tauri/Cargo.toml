@@ -23,6 +23,7 @@ tauri-plugin-shell = "2"
 tauri-plugin-clipboard-manager = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
 walkdir = "2"
 url = "2"
 single-instance = "0.3"

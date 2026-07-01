@@ -3039,8 +3039,9 @@ dependencies = [
 
 [[package]]
 name = "parsekit"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
+ "chrono",
  "liteparse",
  "objc2",
  "objc2-app-kit",

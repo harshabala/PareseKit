@@ -3,6 +3,7 @@ pub mod macos_popover;
 pub mod macos_open_files;
 pub mod popover_trace;
 pub mod sidecar_helpers;
+pub mod token_stats;
 
 use popover_trace::trace as popover_trace;
 
@@ -1069,6 +1070,31 @@ async fn check_for_update(app: AppHandle) -> Result<UpdateInfo, String> {
 }
 
 #[tauri::command]
+fn get_token_stats() -> Result<token_stats::TokenStats, String> {
+    Ok(token_stats::load())
+}
+
+#[tauri::command]
+fn reset_token_stats() -> Result<token_stats::TokenStats, String> {
+    token_stats::reset()
+}
+
+#[tauri::command]
+fn record_token_savings(
+    file_type: String,
+    tokens_saved: u64,
+    pages_unlocked: u64,
+    documents_unlocked: u64,
+) -> Result<token_stats::TokenStats, String> {
+    token_stats::record(token_stats::RecordInput {
+        file_type,
+        tokens_saved,
+        pages_unlocked,
+        documents_unlocked,
+    })
+}
+
+#[tauri::command]
 async fn install_update(app: AppHandle) -> Result<(), String> {
     let updater = app.updater().map_err(|e| e.to_string())?;
     let update = updater
@@ -1115,6 +1141,9 @@ pub fn run() {
             finder_quick_action_installed,
             check_for_update,
             install_update,
+            get_token_stats,
+            reset_token_stats,
+            record_token_savings,
             show_main_window,
             quit_app,
         ])
