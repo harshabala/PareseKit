@@ -129,55 +129,10 @@ fn get_finder_selection_paths() -> Vec<String> {
     Vec::new()
 }
 
-#[cfg(target_os = "macos")]
-fn get_clipboard_file_paths() -> Vec<String> {
-    let file_script = r#"
-try
-    set raw to the clipboard as «class furl»
-    if class of raw is list then
-        set out to ""
-        repeat with f in raw
-            set end of out to (POSIX path of f) & linefeed
-        end repeat
-        return text 1 thru -2 of out
-    else
-        return POSIX path of raw
-    end if
-on error
-    return ""
-end try
-"#;
-    if let Some(text) = run_osascript(file_script) {
-        let paths: Vec<String> = text
-            .lines()
-            .map(str::trim)
-            .filter(|line| !line.is_empty())
-            .map(str::to_string)
-            .collect();
-        if !paths.is_empty() {
-            return paths;
-        }
-    }
-
-    if let Some(text) = run_osascript("the clipboard as text") {
-        let trimmed = text.trim();
-        if !trimmed.is_empty() && (trimmed.starts_with('/') || trimmed.starts_with("file://")) {
-            return vec![trimmed.to_string()];
-        }
-    }
-
-    Vec::new()
-}
-
-#[cfg(not(target_os = "macos"))]
-fn get_clipboard_file_paths() -> Vec<String> {
-    Vec::new()
-}
-
 pub fn resolve_hotkey_input_paths() -> Vec<String> {
     let mut raw_paths = get_finder_selection_paths();
     if raw_paths.is_empty() {
-        raw_paths = get_clipboard_file_paths();
+        raw_paths = crate::clipboard_paths::get_clipboard_file_paths();
     }
 
     let mut files = Vec::new();
@@ -191,15 +146,41 @@ pub fn resolve_hotkey_input_paths() -> Vec<String> {
 }
 
 fn handle_hotkey_pressed<R: Runtime>(app: &AppHandle<R>) {
-    let paths = resolve_hotkey_input_paths();
-    if paths.is_empty() {
-        let _ = crate::show_completion_notification(
-            "ParseKit".to_string(),
-            "No supported files in Finder selection or clipboard.".to_string(),
-        );
+    let finder_paths = get_finder_selection_paths();
+    if !finder_paths.is_empty() {
+        let mut files = Vec::new();
+        for path in finder_paths {
+            files.extend(expand_path_to_supported_files(&path));
+        }
+        files.sort();
+        files.dedup();
+        if files.is_empty() {
+            let _ = crate::display_notification(
+                "ParseKit",
+                "No supported files in Finder selection.",
+            );
+            return;
+        }
+        let _ = app.emit("background-parse", files);
         return;
     }
-    let _ = app.emit("background-parse", paths);
+
+    let clipboard_files = crate::clipboard_convert::resolve_clipboard_supported_files();
+    if !clipboard_files.is_empty() {
+        tauri::async_runtime::spawn_blocking(|| {
+            crate::clipboard_convert::run_clipboard_convert_with_notification(
+                "ParseKit",
+                "Markdown copied to clipboard",
+                "Clipboard convert failed",
+            );
+        });
+        return;
+    }
+
+    let _ = crate::display_notification(
+        "ParseKit",
+        "No supported files in Finder selection or clipboard.",
+    );
 }
 
 pub fn register_global_hotkey<R: Runtime>(
