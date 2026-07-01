@@ -204,7 +204,7 @@
     "hotkeyReset": "Restablecer a ⌃⇧M",
     "hotkeyUpdateFailed": "No se pudo registrar el atajo. Puede estar en uso por otra app.",
     "floatingHudTitle": "Panel de progreso flotante",
-    "floatingHudHint": "Muestra un panel pequeño siempre visible al analizar con el atajo global o la acción rápida de Finder en segundo plano. Desactivado por defecto.",
+    "floatingHudHint": "Muestra un panel pequeño siempre visible durante el análisis por lotes (barra de menú, atajo o acción rápida de Finder). Sustituye la notificación del sistema al terminar. Desactivado por defecto.",
     "finderTitle": "Finder",
     "finderHint": "Clic derecho en Finder → Acciones rápidas. Parse to Markdown with ParseKit conserva los originales. Parse to Markdown with ParseKit (Replace Original) mueve el archivo fuente a la Papelera tras un análisis correcto (recuperable en Finder). Ambas requieren carpeta de salida en Ajustes para conversión silenciosa; si no, abre ParseKit con los archivos.",
     "finderInstall": "Instalar acciones rápidas de Finder",

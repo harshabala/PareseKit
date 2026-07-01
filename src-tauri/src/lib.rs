@@ -5,6 +5,8 @@ pub mod macos_popover;
 #[cfg(target_os = "macos")]
 pub mod macos_open_files;
 #[cfg(target_os = "macos")]
+pub mod macos_notification;
+#[cfg(target_os = "macos")]
 pub mod macos_trash;
 pub mod popover_trace;
 pub mod sidecar_helpers;
@@ -790,16 +792,7 @@ fn save_error_report(dir: String, file_name: String, contents: String) -> Result
 pub(crate) fn display_notification(title: &str, body: &str) -> Result<(), String> {
     #[cfg(target_os = "macos")]
     {
-        let script = format!(
-            "display notification {} with title {}",
-            serde_json::to_string(body).map_err(|e| e.to_string())?,
-            serde_json::to_string(title).map_err(|e| e.to_string())?
-        );
-        std::process::Command::new("osascript")
-            .args(["-e", &script])
-            .spawn()
-            .map_err(|e| format!("notification failed: {e}"))?;
-        Ok(())
+        macos_notification::display_notification(title, body)
     }
     #[cfg(not(target_os = "macos"))]
     {

@@ -292,7 +292,7 @@
   }
 
   async function maybeShowHud() {
-    if (!showFloatingHud || !isBackgroundBatch) return;
+    if (!showFloatingHud) return;
     hudActive = true;
     await showProgressHudWindow();
     await syncHudIfActive();
@@ -784,12 +784,15 @@
             }
             const parsed = files.filter((f) => f.status === "done").length;
             const notifyErrors = files.filter((f) => f.status === "error").length;
-            void invoke("show_completion_notification", {
-              title: t("app.name"),
-              body: t("run.notifyDone", { parsed, errors: notifyErrors }),
-            }).catch(() => {});
             void refreshTokenStats();
             void syncHudIfActive();
+            // HUD shows completion summary; skip duplicate system notification when HUD is active.
+            if (!hudActive) {
+              void invoke("show_completion_notification", {
+                title: t("app.name"),
+                body: t("run.notifyDone", { parsed, errors: notifyErrors }),
+              }).catch(() => {});
+            }
             isBackgroundBatch = false;
           } else if (event.type === "error") {
             // Fatal sidecar error (see sidecar.ts protocol) — not per-file progress errors.
