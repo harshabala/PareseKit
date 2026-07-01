@@ -41,7 +41,8 @@
   import AboutScreen from "./components/AboutScreen.svelte";
   import OnboardingChecklist from "./components/OnboardingChecklist.svelte";
   import UpdateBanner from "./components/UpdateBanner.svelte";
-  import { checkForUpdate, installUpdate, type UpdateInfo } from "./lib/update";
+  import { updateState } from "./lib/updateState.svelte";
+  import { finderActionState } from "./lib/finderActionState.svelte";
   import { pickOutputFolder } from "./lib/picker";
   import { warmDependencies } from "./lib/depsCache";
   import {
@@ -101,20 +102,18 @@
   let parseRun = $state<ParseRunHandle | null>(null);
   let isIngesting = $state(false);
   let launchAtLogin = $state(false);
-  let finderActionInstalled = $state(false);
-  let finderActionBusy = $state(false);
-  let finderActionNotice = $state<string | null>(null);
   let showOnboarding = $state(false);
   let showInstallHint = $state(false);
   let configCollapsed = $state(false);
   let hasSuccessfulParse = $state(false);
   let appVersion = $state("0.2.0");
-  let updateAvailable = $state<UpdateInfo | null>(null);
-  let isInstallingUpdate = $state(false);
-  let updateError = $state<string | null>(null);
-  let updateCheckBusy = $state(false);
-  let updateStatusNote = $state<string | null>(null);
-  let updateStatusOk = $state(false);
+
+  $effect(() => {
+    if (updateState.available) {
+      showSettings = false;
+      showAbout = false;
+    }
+  });
 
   const PARSE_STALL_BASE_MS = 120_000;
   const PARSE_STALL_PER_FILE_MS = 15_000;
@@ -186,30 +185,7 @@
     showHistory = false;
     showAbout = false;
     showSettings = true;
-    void refreshFinderActionStatus();
-  }
-
-  async function refreshFinderActionStatus() {
-    try {
-      finderActionInstalled = await invoke<boolean>("finder_quick_action_installed");
-    } catch {
-      finderActionInstalled = false;
-    }
-  }
-
-  async function installFinderQuickAction() {
-    finderActionBusy = true;
-    finderActionNotice = null;
-    try {
-      const msg = await invoke<string>("install_finder_quick_action");
-      finderActionNotice = msg || t("settings.finderInstalled");
-      await refreshFinderActionStatus();
-    } catch (e) {
-      finderActionNotice =
-        (e instanceof Error ? e.message : String(e)) || t("settings.finderInstallFailed");
-    } finally {
-      finderActionBusy = false;
-    }
+    void finderActionState.refreshStatus();
   }
 
   async function ingestExternalPaths(paths: string[]) {
@@ -279,58 +255,6 @@
     }
   }
 
-  function scheduleBackgroundUpdateCheck() {
-    void checkForUpdate()
-      .then((info) => {
-        if (info.available) {
-          updateAvailable = info;
-        }
-      })
-      .catch(() => {
-        /* silent — offline or misconfigured endpoint */
-      });
-  }
-
-  async function handleCheckForUpdates() {
-    updateStatusNote = null;
-    updateStatusOk = false;
-    updateError = null;
-    updateCheckBusy = true;
-    try {
-      const info = await checkForUpdate();
-      if (info.available) {
-        updateAvailable = info;
-        showSettings = false;
-        showAbout = false;
-        updateStatusNote = null;
-      } else {
-        updateStatusNote = t("update.upToDate", { version: appVersion });
-        updateStatusOk = true;
-      }
-    } catch {
-      updateStatusNote = t("update.checkFailed");
-    } finally {
-      updateCheckBusy = false;
-    }
-  }
-
-  async function installAvailableUpdate() {
-    isInstallingUpdate = true;
-    updateError = null;
-    try {
-      await installUpdate();
-    } catch (e) {
-      updateError =
-        e instanceof Error ? e.message : String(e) || t("update.installFailed");
-      isInstallingUpdate = false;
-    }
-  }
-
-  function dismissUpdateBanner() {
-    updateAvailable = null;
-    updateError = null;
-  }
-
   onMount(() => {
     let unlistenOpen: (() => void) | undefined;
 
@@ -391,7 +315,7 @@
       /* keep default */
     }
 
-    scheduleBackgroundUpdateCheck();
+    updateState.scheduleBackgroundCheck(appVersion);
 
     const savedInput = await getSetting("inputDir", "");
     if (savedInput) {
@@ -856,14 +780,14 @@
     </div>
   </header>
 
-  {#if updateAvailable}
+  {#if updateState.available}
     <div in:fly={bannerFlyInParams} out:fly={bannerFlyOutParams}>
       <UpdateBanner
-        info={updateAvailable}
-        installing={isInstallingUpdate}
-        error={updateError}
-        onInstall={installAvailableUpdate}
-        onDismiss={dismissUpdateBanner}
+        info={updateState.available}
+        installing={updateState.isInstalling}
+        error={updateState.error}
+        onInstall={() => updateState.installAvailable()}
+        onDismiss={() => updateState.dismiss()}
       />
     </div>
   {/if}
@@ -1080,15 +1004,15 @@
         onWorkersChange={handleWorkersChange}
         onLaunchAtLoginChange={handleLaunchAtLoginChange}
         onOpenAbout={() => (showAbout = true)}
-        {finderActionInstalled}
-        {finderActionBusy}
-        finderActionNotice={finderActionNotice}
-        onInstallFinderAction={installFinderQuickAction}
+        finderActionInstalled={finderActionState.installed}
+        finderActionBusy={finderActionState.busy}
+        finderActionNotice={finderActionState.notice}
+        onInstallFinderAction={() => finderActionState.install()}
         {appVersion}
-        {updateCheckBusy}
-        updateStatusNote={updateStatusNote}
-        {updateStatusOk}
-        onCheckForUpdates={handleCheckForUpdates}
+        updateCheckBusy={updateState.checkBusy}
+        updateStatusNote={updateState.statusNote}
+        updateStatusOk={updateState.statusOk}
+        onCheckForUpdates={() => updateState.checkForUpdates(appVersion)}
         onClose={() => (showSettings = false)}
       />
     {/if}
