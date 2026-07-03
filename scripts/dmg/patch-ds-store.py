@@ -1,23 +1,18 @@
 #!/usr/bin/env python3
-"""Rebuild DMG .DS_Store with dark icvp background so Finder uses white labels.
+"""Patch DMG .DS_Store icvp in-place so Finder uses white labels on dark backgrounds.
 
-Finder label color follows icvp backgroundColor*, not the PNG. create-dmg often
-leaves these at white (1,1,1), producing dark/gray labels on image backgrounds.
-See: https://github.com/create-dmg/create-dmg/issues/197
+Finder label color follows icvp backgroundColor*, not the PNG. create-dmg leaves
+these at white (1,1,1), producing dark labels. In-place patch preserves AppleScript
+settings (hide extension, icon positions, background alias).
 """
 from __future__ import annotations
 
 import copy
-import os
 import sys
 import time
 
 # Match packaging/dmg/background.html base (#12172B).
 NAVY_RGB = (18 / 255.0, 23 / 255.0, 43 / 255.0)
-
-# Locked icon top-left positions (must match build-dmg.sh).
-PARSEKIT_ILOC = (126, 108)
-APPLICATIONS_ILOC = (466, 108)
 
 
 def patch(ds_store_path: str) -> None:
@@ -26,36 +21,15 @@ def patch(ds_store_path: str) -> None:
     last_err: Exception | None = None
     for _ in range(15):
         try:
-            with DSStore.open(ds_store_path, "r") as src:
-                icvp = copy.deepcopy(src["."]["icvp"])
-                bwsp = src["."]["bwsp"]
-
+            store = DSStore.open(ds_store_path, "r+")
+            icvp = copy.deepcopy(store["."]["icvp"])
             icvp["backgroundColorRed"] = NAVY_RGB[0]
             icvp["backgroundColorGreen"] = NAVY_RGB[1]
             icvp["backgroundColorBlue"] = NAVY_RGB[2]
             icvp["showItemInfo"] = False
-
-            tmp_path = os.path.join("/tmp", f"parsekit-dsstore-{os.getpid()}.patched")
-            if os.path.exists(tmp_path):
-                os.remove(tmp_path)
-
-            with DSStore.open(tmp_path, "w+") as out:
-                out["."]["bwsp"] = bwsp
-                out["."]["icvp"] = icvp
-                out["."]["icvl"] = ("type", b"icnv")
-                out["ParseKit.app"]["Iloc"] = PARSEKIT_ILOC
-                out["Applications"]["Iloc"] = APPLICATIONS_ILOC
-                out.flush()
-
-            try:
-                os.replace(tmp_path, ds_store_path)
-            except OSError:
-                import shutil
-
-                shutil.copy2(tmp_path, ds_store_path)
-            finally:
-                if os.path.exists(tmp_path):
-                    os.remove(tmp_path)
+            store["."]["icvp"] = icvp
+            store.flush()
+            store.close()
             return
         except KeyError as err:
             last_err = err
@@ -72,7 +46,7 @@ def main() -> int:
         print(f"usage: {sys.argv[0]} <path-to-.DS_Store>", file=sys.stderr)
         return 1
     patch(sys.argv[1])
-    print(f"patched {sys.argv[1]} (icvp backgroundColor → navy, white Finder labels)")
+    print(f"patched {sys.argv[1]} (icvp backgroundColor → navy)")
     return 0
 
 

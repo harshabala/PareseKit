@@ -134,34 +134,33 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     )
   }
 
-  func drawDragChevron(at x: CGFloat, y: CGFloat, opacity: CGFloat) {
-    let s = scale
-    let cx = x * s
-    let cy = topY(y, scale: 1) * scale
-    gold.withAlphaComponent(opacity).setStroke()
-    let path = NSBezierPath()
-    path.lineWidth = 3 * s
-    path.lineCapStyle = .round
-    path.lineJoinStyle = .round
-    path.move(to: NSPoint(x: cx - 9 * s, y: cy + 9 * s))
-    path.line(to: NSPoint(x: cx, y: cy))
-    path.line(to: NSPoint(x: cx - 9 * s, y: cy - 9 * s))
-    path.stroke()
-  }
-
-  func drawDragCueBetweenIcons() {
-    // Icon top-left (126,108), size 128 → centers (190,172) and (530,172).
+  func drawDragArrowBetweenIcons() {
+    // Match background.html: cue at y=158 between icon wells, not through icon centers.
     let iconSize: CGFloat = 128
-    let gapStart = parseKitCenter.x + iconSize / 2 + 10
-    let gapEnd = applicationsCenter.x - iconSize / 2 - 10
-    let chevronY = parseKitCenter.y
-    let chevronXs: [CGFloat] = [0.12, 0.32, 0.5, 0.68, 0.88].map {
-      gapStart + (gapEnd - gapStart) * $0
-    }
-    let opacities: [CGFloat] = [0.45, 0.62, 0.78, 0.9, 1.0]
-    for (x, opacity) in zip(chevronXs, opacities) {
-      drawDragChevron(at: x, y: chevronY, opacity: opacity)
-    }
+    let startX = parseKitCenter.x + iconSize / 2 + 16
+    let endX = applicationsCenter.x - iconSize / 2 - 16
+    let arrowY: CGFloat = 158
+    let s = scale
+    let cy = topY(arrowY, scale: 1) * scale
+    let sx = startX * s
+    let ex = endX * s
+
+    gold.withAlphaComponent(0.95).setStroke()
+    let shaft = NSBezierPath()
+    shaft.lineWidth = 3.5 * s
+    shaft.lineCapStyle = .round
+    shaft.move(to: NSPoint(x: sx, y: cy))
+    shaft.line(to: NSPoint(x: ex - 18 * s, y: cy))
+    shaft.stroke()
+
+    let head = NSBezierPath()
+    head.lineWidth = 3.5 * s
+    head.lineCapStyle = .round
+    head.lineJoinStyle = .round
+    head.move(to: NSPoint(x: ex - 28 * s, y: cy + 11 * s))
+    head.line(to: NSPoint(x: ex, y: cy))
+    head.line(to: NSPoint(x: ex - 28 * s, y: cy - 11 * s))
+    head.stroke()
   }
 
   let primaryFont = NSFont.systemFont(ofSize: 19 * scale, weight: .semibold)
@@ -179,8 +178,7 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     height: 28
   )
 
-  // Finder draws icons + white labels (icvp backgroundColor patched in patch-ds-store.py).
-  drawDragCueBetweenIcons()
+  drawDragArrowBetweenIcons()
 
   drawCenteredText(
     "If macOS blocks first launch, paste this in Terminal after installing:",
