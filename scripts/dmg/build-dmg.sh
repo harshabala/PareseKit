@@ -73,8 +73,16 @@ APP_ICON_Y=108
 APPS_LINK_X=466
 APPS_LINK_Y=108
 
+# Production volume title. For clean-account / Finder-plist cache busting during visual
+# tests, run: DMG_UNIQUE_VOLNAME=1 bash scripts/dmg/build-dmg.sh <ParseKit.app>
+# That yields e.g. ParseKit-test-20260703143052 (Finder caches layout by volume name).
+DMG_VOLNAME="${DMG_VOLNAME:-ParseKit}"
+if [[ "${DMG_UNIQUE_VOLNAME:-}" == "1" ]]; then
+  DMG_VOLNAME="ParseKit-test-$(date +%Y%m%d%H%M%S)"
+fi
+
 "$CREATE_DMG" \
-  --volname "ParseKit" \
+  --volname "$DMG_VOLNAME" \
   --volicon "$ICON_ICNS" \
   --background "$BACKGROUND_1X" \
   --background-retina "$BACKGROUND_2X" \
@@ -89,6 +97,7 @@ APPS_LINK_Y=108
   "$DMG_STAGE"
 
 echo "Styled DMG: $DMG_OUT"
+echo "  volume name: ${DMG_VOLNAME}"
 echo "  backgrounds: $BACKGROUND_1X + $BACKGROUND_2X"
 echo "  window: ${DMG_W}×${DMG_H}  icon-size: ${ICON_SIZE}"
 echo "  ParseKit.app @ (${APP_ICON_X}, ${APP_ICON_Y})  Applications @ (${APPS_LINK_X}, ${APPS_LINK_Y})"
