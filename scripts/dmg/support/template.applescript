@@ -10,7 +10,6 @@ on run (volumeName)
 
 			set theBottomRightX to (theXOrigin + theWidth)
 			set theBottomRightY to (theYOrigin + theHeight)
-			set dsStore to "\"" & "/Volumes/" & volumeName & "/" & ".DS_STORE\""
 
 			tell container window
 				set current view to icon view
@@ -59,17 +58,7 @@ on run (volumeName)
 			end tell
 		end tell
 
-		--give the finder some time to write the .DS_Store file
-		delay 3
-
-		set waitTime to 0
-		set ejectMe to false
-		repeat while ejectMe is false
-			delay 1
-			set waitTime to waitTime + 1
-			
-			if (do shell script "[ -f " & dsStore & " ]; echo $?") = "0" then set ejectMe to true
-		end repeat
-		log "waited " & waitTime & " seconds for .DS_STORE to be created."
+		delay 1
+		close every window
 	end tell
 end run

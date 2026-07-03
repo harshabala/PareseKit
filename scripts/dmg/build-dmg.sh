@@ -7,8 +7,7 @@ VERSION="$(node -p "require('$ROOT/package.json').version")"
 DMG_DIR="$ROOT/src-tauri/target/release/bundle/dmg"
 DMG_OUT="$DMG_DIR/ParseKit_${VERSION}_aarch64.dmg"
 CREATE_DMG="$ROOT/scripts/dmg/create-dmg.sh"
-DMG_SCRIPTS="$ROOT/scripts/dmg"
-DMG_VENV="$DMG_SCRIPTS/.venv"
+VERIFY_DMG="$ROOT/scripts/dmg/verify-dmg-layout.sh"
 DMG_ASSETS="$ROOT/packaging/dmg/assets"
 BACKGROUND_1X="$DMG_ASSETS/background.png"
 BACKGROUND_2X="$DMG_ASSETS/background@2x.png"
@@ -20,8 +19,9 @@ if [[ ! -x "$CREATE_DMG" ]]; then
   echo "error: $CREATE_DMG not found or not executable" >&2
   exit 1
 fi
+chmod +x "$VERIFY_DMG"
 
-# Procedural backgrounds match packaging/dmg/background.html (Open Design PNG exports were mis-cropped).
+# Procedural backgrounds match packaging/dmg/background.html layout contract.
 if [[ "${SKIP_DMG_BACKGROUND_GEN:-}" != "1" ]]; then
   echo "Generating DMG backgrounds (720×460 contract)..."
   (
@@ -29,7 +29,6 @@ if [[ "${SKIP_DMG_BACKGROUND_GEN:-}" != "1" ]]; then
     swift GenerateBackground.swift
     cp background.png background@2x.png "$DMG_ASSETS/"
   )
-  # Finder maps pixels→points via DPI: 1× @72dpi, 2× @144dpi (otherwise Retina misaligns art).
   sips -s dpiWidth 72 -s dpiHeight 72 "$BACKGROUND_1X" >/dev/null
   sips -s dpiWidth 144 -s dpiHeight 144 "$BACKGROUND_2X" >/dev/null
 fi
@@ -37,12 +36,11 @@ fi
 for f in "$BACKGROUND_1X" "$BACKGROUND_2X"; do
   if [[ ! -f "$f" ]]; then
     echo "error: missing design asset $f" >&2
-    echo "hint: copy delivered background.png and background@2x.png into packaging/dmg/assets/" >&2
     exit 1
   fi
+  echo "background asset OK: $f ($(stat -f%z "$f" 2>/dev/null || stat -c%s "$f") bytes)"
 done
 
-# Validate dimensions (handoff contract).
 validate_png() {
   local path="$1" expect_w="$2" expect_h="$3"
   local w h
@@ -66,8 +64,7 @@ ditto --norsrc "$STAGE_APP" "$DMG_STAGE/ParseKit.app"
 
 rm -f "$DMG_OUT"
 
-# Locked coordinate contract — must match packaging/dmg/background.html layout.
-# create-dmg/AppleScript position = top-left; centers (190,172)/(530,172) → (126,108)/(466,108).
+# Locked coordinate contract — create-dmg/AppleScript position = top-left.
 DMG_W=720
 DMG_H=460
 ICON_SIZE=128
@@ -75,16 +72,6 @@ APP_ICON_X=126
 APP_ICON_Y=108
 APPS_LINK_X=466
 APPS_LINK_Y=108
-
-ensure_dmg_patch_venv() {
-  if [[ ! -x "$DMG_VENV/bin/python" ]]; then
-    python3 -m venv "$DMG_VENV"
-    "$DMG_VENV/bin/pip" install ds-store -q
-  fi
-}
-ensure_dmg_patch_venv
-export PARSEKIT_DMG_PATCH_PYTHON="$DMG_VENV/bin/python"
-export PARSEKIT_DMG_PATCH_SCRIPT="$DMG_SCRIPTS/patch-ds-store.py"
 
 "$CREATE_DMG" \
   --volname "ParseKit" \
@@ -102,22 +89,17 @@ export PARSEKIT_DMG_PATCH_SCRIPT="$DMG_SCRIPTS/patch-ds-store.py"
   "$DMG_STAGE"
 
 echo "Styled DMG: $DMG_OUT"
-echo "  backgrounds: $BACKGROUND_1X + $BACKGROUND_2X → .background/ on volume"
+echo "  backgrounds: $BACKGROUND_1X + $BACKGROUND_2X"
 echo "  window: ${DMG_W}×${DMG_H}  icon-size: ${ICON_SIZE}"
 echo "  ParseKit.app @ (${APP_ICON_X}, ${APP_ICON_Y})  Applications @ (${APPS_LINK_X}, ${APPS_LINK_Y})"
 
-# Post-build verification on mounted image (best-effort).
-VERIFY_MOUNT="$(mktemp -d /tmp/parsekit-dmg-assets-verify.XXXXXX)"
-if hdiutil attach -nobrowse -readonly -mountpoint "$VERIFY_MOUNT" "$DMG_OUT" >/dev/null 2>&1; then
-  for bg in background.png "background@2x.png"; do
-    if [[ ! -f "$VERIFY_MOUNT/.background/$bg" ]]; then
-      echo "warn: .background/$bg missing inside DMG" >&2
-    fi
-  done
-  visible=$(ls -1A "$VERIFY_MOUNT" 2>/dev/null | grep -v '^\.' | grep -v '^ParseKit.app$' | grep -v '^Applications$' | grep -v '^\.background$' || true)
-  if [[ -n "$visible" ]]; then
-    echo "warn: unexpected visible DMG entries: $visible" >&2
-  fi
-  hdiutil detach "$VERIFY_MOUNT" -quiet 2>/dev/null || true
-  rmdir "$VERIFY_MOUNT" 2>/dev/null || true
-fi
+# Mandatory layout verification on the compressed shipping artifact.
+"$VERIFY_DMG" "$DMG_OUT"
+
+# Fresh-mount simulation: copy to a new filename and verify again (no Finder cache).
+FRESH_COPY="$(mktemp /tmp/ParseKit-fresh-verify.XXXXXX.dmg)"
+cp "$DMG_OUT" "$FRESH_COPY"
+"$VERIFY_DMG" "$FRESH_COPY"
+rm -f "$FRESH_COPY"
+
+echo "DMG build + layout verification passed"

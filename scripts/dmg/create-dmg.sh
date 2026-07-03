@@ -44,23 +44,35 @@ function pure_version() {
 }
 
 function hdiutil_detach_retry() {
-	# Unmount
-	unmounting_attempts=0
-	until
-		echo "Unmounting disk image..."
-		(( unmounting_attempts++ ))
-		hdiutil detach "$1"
-		exit_code=$?
-		(( exit_code ==  0 )) && break            # nothing goes wrong
-		(( exit_code != 16 )) && exit $exit_code  # exit with the original exit code
-		# The above statement returns 1 if test failed (exit_code == 16).
-		#   It can make the code in the {do... done} block to be executed
-	do
-		(( unmounting_attempts == MAXIMUM_UNMOUNTING_ATTEMPTS )) && exit 16  # patience exhausted, exit with code EBUSY
-		echo "Wait a moment..."
-		sleep $(( 1 * (2 ** unmounting_attempts) ))
+	# Unmount — retry busy volumes, then force-detach as last resort.
+	local dev_name="$1"
+	local mount_dir="${2:-}"
+	local attempt detached=0
+
+	echo "Unmounting disk image..."
+	for attempt in 1 2 3 4 5; do
+		if [[ -n "$mount_dir" && -d "$mount_dir" ]]; then
+			if hdiutil detach "$mount_dir" 2>/dev/null; then
+				detached=1
+				break
+			fi
+		fi
+		if hdiutil detach "$dev_name" 2>/dev/null; then
+			detached=1
+			break
+		fi
+		echo "Detach busy (attempt ${attempt}/5), waiting 2s..."
+		sleep 2
 	done
-	unset unmounting_attempts
+
+	if [[ $detached -eq 0 ]]; then
+		echo "Forcing detach..."
+		if [[ -n "$mount_dir" && -d "$mount_dir" ]]; then
+			hdiutil detach "$mount_dir" -force || hdiutil detach "$dev_name" -force
+		else
+			hdiutil detach "$dev_name" -force
+		fi
+	fi
 }
 
 function version() {
@@ -449,10 +461,20 @@ fi
 echo "Mount dir:       $MOUNT_DIR"
 
 if [[ -n "$BACKGROUND_FILE" ]]; then
+	if [[ ! -f "$BACKGROUND_FILE" ]]; then
+		echo "error: --background file not found: $BACKGROUND_FILE" >&2
+		hdiutil_detach_retry "${DEV_NAME}" "${MOUNT_DIR}"
+		exit 66
+	fi
 	echo "Copying background file '$BACKGROUND_FILE'..."
 	[[ -d "$MOUNT_DIR/.background" ]] || mkdir "$MOUNT_DIR/.background"
 	cp "$BACKGROUND_FILE" "$MOUNT_DIR/.background/$BACKGROUND_FILE_NAME"
 	if [[ -n "$BACKGROUND_FILE_RETINA" ]]; then
+		if [[ ! -f "$BACKGROUND_FILE_RETINA" ]]; then
+			echo "error: --background-retina file not found: $BACKGROUND_FILE_RETINA" >&2
+			hdiutil_detach_retry "${DEV_NAME}" "${MOUNT_DIR}"
+			exit 66
+		fi
 		echo "Copying Retina background '$BACKGROUND_FILE_RETINA'..."
 		cp "$BACKGROUND_FILE_RETINA" "$MOUNT_DIR/.background/$(basename "$BACKGROUND_FILE_RETINA")"
 	fi
@@ -514,12 +536,16 @@ else
 			true
 		else
 			echo >&2 "Failed running AppleScript"
-			hdiutil_detach_retry "${DEV_NAME}"
+			hdiutil_detach_retry "${DEV_NAME}" "${MOUNT_DIR}" "${MOUNT_DIR}"
 			exit 64
 		fi
 		echo "Done running the AppleScript..."
-		sleep 4
 		rm "$APPLESCRIPT_FILE"
+
+		# create-dmg pattern: layout commits on window close — fixed flush, no .DS_Store polling.
+		echo "Flushing Finder layout (sync + 5s fixed delay after window close)..."
+		sync "${MOUNT_DIR}" 2>/dev/null || sync
+		sleep 5
 	else
 		echo ''
 		echo "Will skip running AppleScript to configure DMG aesthetics because of --skip-jenkins option."
@@ -556,35 +582,7 @@ fi
 echo "Deleting .fseventsd"
 rm -rf "${MOUNT_DIR}/.fseventsd" || true
 
-hdiutil_detach_retry "${DEV_NAME}"
-
-# Patch after detach — Finder finalizes icvp/background in .DS_Store on unmount.
-if [[ -n "${PARSEKIT_DMG_PATCH_SCRIPT:-}" && -f "${PARSEKIT_DMG_PATCH_PYTHON:-}" && -f "$PARSEKIT_DMG_PATCH_SCRIPT" ]]; then
-	echo "Patching .DS_Store for white Finder labels on dark background..."
-	PATCH_MOUNT="$(mktemp -d /tmp/parsekit-dmg-patch.XXXXXX)"
-	PATCH_DEV="$(hdiutil attach -readwrite -noverify -nobrowse -mountpoint "${PATCH_MOUNT}" "${DMG_TEMP_NAME}" 2>/dev/null | grep -E '^/dev/' | ${HDIUTIL_FILTER} | awk '{print $1}')"
-	if [[ -n "${PATCH_DEV}" ]]; then
-		if [[ ! -f "${PATCH_MOUNT}/.DS_Store" ]]; then
-			if [[ "${FILESYSTEM}" == "APFS" ]]; then
-				PATCH_MOUNT="$(find_mount_dir "${PATCH_DEV}")"
-			else
-				PATCH_MOUNT="$(find_mount_dir "${PATCH_DEV}s")"
-			fi
-		fi
-		if [[ -n "${PATCH_MOUNT}" && -f "${PATCH_MOUNT}/.DS_Store" ]]; then
-			if ! "$PARSEKIT_DMG_PATCH_PYTHON" "$PARSEKIT_DMG_PATCH_SCRIPT" "${PATCH_MOUNT}/.DS_Store"; then
-				echo >&2 "warn: .DS_Store label-color patch failed (DMG will still be created)"
-			fi
-		else
-			echo >&2 "warn: could not locate .DS_Store for label-color patch"
-		fi
-		hdiutil_detach_retry "${PATCH_DEV}" >/dev/null 2>&1 || true
-		rmdir "${PATCH_MOUNT}" 2>/dev/null || true
-	else
-		echo >&2 "warn: could not re-mount DMG temp image for label-color patch"
-		rmdir "${PATCH_MOUNT}" 2>/dev/null || true
-	fi
-fi
+hdiutil_detach_retry "${DEV_NAME}" "${MOUNT_DIR}"
 
 # Compress image and optionally encrypt
 if [[ $ENABLE_ENCRYPTION -eq 0 ]]; then
