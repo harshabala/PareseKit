@@ -19,9 +19,9 @@ if [[ ! -x "$CREATE_DMG" ]]; then
   exit 1
 fi
 
-# Optional: regenerate procedural backgrounds for dev only (release uses design PNGs).
-if [[ "${REGENERATE_DMG_BACKGROUND:-}" == "1" ]]; then
-  echo "REGENERATE_DMG_BACKGROUND=1 — running GenerateBackground.swift (dev only)..."
+# Procedural backgrounds match packaging/dmg/background.html (Open Design PNG exports were mis-cropped).
+if [[ "${SKIP_DMG_BACKGROUND_GEN:-}" != "1" ]]; then
+  echo "Generating DMG backgrounds (720×460 contract)..."
   (
     cd "$ROOT/scripts/dmg"
     swift GenerateBackground.swift
@@ -61,14 +61,15 @@ ditto --norsrc "$STAGE_APP" "$DMG_STAGE/ParseKit.app"
 
 rm -f "$DMG_OUT"
 
-# Locked coordinate contract — must match packaging/dmg/assets/background.html layout.
+# Locked coordinate contract — must match packaging/dmg/background.html layout.
+# create-dmg positions icons by top-left; wells center at (190,172) and (530,172).
 DMG_W=720
 DMG_H=460
 ICON_SIZE=128
-APP_ICON_X=190
-APP_ICON_Y=172
-APPS_LINK_X=530
-APPS_LINK_Y=172
+APP_ICON_X=126   # 190 - ICON_SIZE/2
+APP_ICON_Y=108   # 172 - ICON_SIZE/2
+APPS_LINK_X=466  # 530 - ICON_SIZE/2
+APPS_LINK_Y=108
 
 "$CREATE_DMG" \
   --volname "ParseKit" \
