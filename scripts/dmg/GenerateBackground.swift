@@ -1,4 +1,7 @@
 #!/usr/bin/env swift
+// DEV ONLY — procedural DMG background fallback. Release builds use design PNGs
+// in packaging/dmg/assets/. Regenerate with: REGENERATE_DMG_BACKGROUND=1 npm run release:macos
+//
 // ParseKit DMG backgrounds — locked coordinate contract (720×460 logical @1x).
 //
 // Window (logical):     720 × 460

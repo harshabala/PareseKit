@@ -64,7 +64,7 @@
     "macOS": {
       "infoPlist": "Info.plist",
       "dmg": {
-        "background": "../scripts/dmg/background@2x.png",
+        "background": "../packaging/dmg/assets/background@2x.png",
         "windowSize": {
           "width": 720,
           "height": 460
