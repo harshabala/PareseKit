@@ -2,6 +2,7 @@ import "./index.css";
 import { mount } from "svelte";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import App from "./App.svelte";
+import OnboardingApp from "./OnboardingApp.svelte";
 import ProgressHudApp from "./ProgressHudApp.svelte";
 import { applyTheme, DEFAULT_THEME } from "./lib/theme";
 
@@ -11,7 +12,12 @@ function bootstrap() {
     const target = document.getElementById("app");
     if (!target) throw new Error("Mount target #app not found");
     const label = getCurrentWindow().label;
-    const component = label === "progress-hud" ? ProgressHudApp : App;
+    const component =
+      label === "progress-hud"
+        ? ProgressHudApp
+        : label === "onboarding"
+          ? OnboardingApp
+          : App;
     const app = mount(component, { target });
     document.getElementById("boot-fallback")?.remove();
     console.info(`[ParseKit] UI mounted (${label})`);

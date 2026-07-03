@@ -1081,6 +1081,34 @@ fn show_main_window(
     Ok(())
 }
 
+#[tauri::command]
+fn show_onboarding_window(app: tauri::AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("onboarding")
+        .ok_or_else(|| "Onboarding window not found".to_string())?;
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Regular);
+    }
+    let _ = window.center();
+    let _ = window.show();
+    let _ = window.set_focus();
+    Ok(())
+}
+
+#[tauri::command]
+fn close_onboarding_window(app: tauri::AppHandle) -> Result<(), String> {
+    let window = app
+        .get_webview_window("onboarding")
+        .ok_or_else(|| "Onboarding window not found".to_string())?;
+    let _ = window.hide();
+    #[cfg(target_os = "macos")]
+    {
+        let _ = app.set_activation_policy(tauri::ActivationPolicy::Accessory);
+    }
+    Ok(())
+}
+
 fn position_progress_hud_under_tray<R: Runtime>(window: &WebviewWindow<R>, rect: &Rect) -> bool {
     let Ok(win_size) = window.outer_size() else {
         return false;
@@ -1361,6 +1389,8 @@ pub fn run() {
             parse_clipboard_to_clipboard,
             set_auto_convert_on_copy,
             show_main_window,
+            show_onboarding_window,
+            close_onboarding_window,
             show_progress_hud,
             hide_progress_hud,
             quit_app,
@@ -1401,6 +1431,9 @@ pub fn run() {
 
             if let Some(hud) = app.get_webview_window("progress-hud") {
                 let _ = hud.hide();
+            }
+            if let Some(onboarding) = app.get_webview_window("onboarding") {
+                let _ = onboarding.hide();
             }
             let w = window.clone();
             let popover_for_events = popover_state.clone();

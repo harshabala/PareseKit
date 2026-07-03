@@ -27,6 +27,22 @@
         "shadow": true
       },
       {
+        "label": "onboarding",
+        "title": "ParseKit",
+        "width": 900,
+        "height": 600,
+        "minWidth": 720,
+        "minHeight": 520,
+        "resizable": true,
+        "visible": false,
+        "decorations": true,
+        "transparent": false,
+        "center": true,
+        "alwaysOnTop": false,
+        "skipTaskbar": false,
+        "shadow": true
+      },
+      {
         "label": "progress-hud",
         "title": "ParseKit Progress",
         "width": 280,

@@ -58,7 +58,7 @@
   import HistoryScreen from "./components/HistoryScreen.svelte";
   import SettingsScreen from "./components/SettingsScreen.svelte";
   import AboutScreen from "./components/AboutScreen.svelte";
-  import OnboardingChecklist from "./components/OnboardingChecklist.svelte";
+
   import UpdateBanner from "./components/UpdateBanner.svelte";
   import TokenSavingsBanner from "./components/TokenSavingsBanner.svelte";
   import { updateState } from "./lib/updateState.svelte";
@@ -130,8 +130,7 @@
   let launchAtLogin = $state(false);
   let autoConvertOnCopy = $state(false);
   let globalShortcut = $state(DEFAULT_GLOBAL_SHORTCUT);
-  let showOnboarding = $state(false);
-  let showInstallHint = $state(false);
+
   let configCollapsed = $state(false);
   let hasSuccessfulParse = $state(false);
   let appVersion = $state("0.2.0");
@@ -171,8 +170,7 @@
       inputFileCount !== null &&
       inputFileCount > 0
   );
-  let outputDirConfigured = $derived(!!outputDir);
-  let filesReady = $derived((inputFileCount ?? 0) > 0);
+
 
   async function resolveDefaultWorkers(savedWorkers: number) {
     if (savedWorkers > 0) {
@@ -425,13 +423,11 @@
     configCollapsed = hasSuccessfulParse;
     const onboardingDone = await getSetting("hasCompletedOnboarding", false);
     if (!onboardingDone) {
-      showOnboarding = true;
       try {
-        showInstallHint = !(await invoke<boolean>("is_installed_in_applications"));
+        await invoke("show_onboarding_window");
       } catch {
-        showInstallHint = false;
+        void openPopoverFromExternal();
       }
-      void openPopoverFromExternal();
     }
     await resolveDefaultWorkers(await getSetting<number>("workers", 0));
     launchAtLogin = await getSetting<boolean>("launchAtLogin", false);
@@ -568,18 +564,6 @@
   async function handleOutputSelect(path: string) {
     outputDir = path;
     await setSetting("outputDir", outputDir);
-  }
-
-  async function dismissOnboarding() {
-    showOnboarding = false;
-    await setSetting("hasCompletedOnboarding", true);
-  }
-
-  async function onboardingPickOutput() {
-    const selected = await pickOutputFolder();
-    if (selected) {
-      await handleOutputSelect(selected);
-    }
   }
 
   function toggleConfigCollapsed() {
@@ -964,18 +948,6 @@
   {/if}
 
   <main>
-    {#if showOnboarding}
-      <div in:fly={sectionFlyInParams} out:fly={sectionFlyOutParams}>
-        <OnboardingChecklist
-          outputDirSet={outputDirConfigured}
-          filesReady={filesReady}
-          {showInstallHint}
-          onDismiss={dismissOnboarding}
-          onPickOutput={onboardingPickOutput}
-        />
-      </div>
-    {/if}
-
     <div class="section">
       <div class="section-title config-section-header">
         <span>{t("config.title")}</span>
