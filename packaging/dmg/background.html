@@ -1,0 +1,245 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --scale: 1;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: calc(720px * var(--scale));
+      height: calc(460px * var(--scale));
+      overflow: hidden;
+      background: #12172B;
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .container {
+      position: relative;
+      width: calc(720px * var(--scale));
+      height: calc(460px * var(--scale));
+      background:
+        radial-gradient(circle at calc(190px * var(--scale)) calc(172px * var(--scale)), rgba(245, 241, 232, 0.07) 0%, transparent 58%),
+        radial-gradient(circle at calc(530px * var(--scale)) calc(172px * var(--scale)), rgba(217, 168, 108, 0.07) 0%, transparent 58%),
+        radial-gradient(circle at 50% 8%, rgba(217, 168, 108, 0.04) 0%, transparent 48%),
+        linear-gradient(135deg, #12172B 0%, #241A35 100%);
+      box-sizing: border-box;
+    }
+
+    .instruction-zone {
+      position: absolute;
+      top: calc(26px * var(--scale));
+      left: calc(40px * var(--scale));
+      right: calc(40px * var(--scale));
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .main-instruction {
+      font-size: calc(19px * var(--scale));
+      font-weight: 600;
+      color: #F5F1E8;
+      margin: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .target-well {
+      position: absolute;
+      width: calc(144px * var(--scale));
+      height: calc(144px * var(--scale));
+      border-radius: calc(28px * var(--scale));
+      background: rgba(255, 255, 255, 0.012);
+      border: calc(1px * var(--scale)) solid rgba(255, 255, 255, 0.05);
+      box-shadow:
+        inset 0 calc(4px * var(--scale)) calc(12px * var(--scale)) rgba(0, 0, 0, 0.35),
+        0 calc(1px * var(--scale)) calc(2px * var(--scale)) rgba(255, 255, 255, 0.02);
+      box-sizing: border-box;
+    }
+
+    .left-well {
+      left: calc(118px * var(--scale));
+      top: calc(100px * var(--scale));
+    }
+
+    .right-well {
+      left: calc(458px * var(--scale));
+      top: calc(100px * var(--scale));
+    }
+
+    .label-capsule {
+      position: absolute;
+      width: calc(130px * var(--scale));
+      height: calc(22px * var(--scale));
+      border-radius: calc(11px * var(--scale));
+      background: rgba(18, 23, 43, 0.55);
+      border: calc(1px * var(--scale)) solid rgba(255, 255, 255, 0.06);
+      box-shadow: 0 calc(2px * var(--scale)) calc(8px * var(--scale)) rgba(0, 0, 0, 0.25);
+      box-sizing: border-box;
+    }
+
+    .left-capsule {
+      left: calc(125px * var(--scale));
+      top: calc(244px * var(--scale));
+    }
+
+    .right-capsule {
+      left: calc(465px * var(--scale));
+      top: calc(244px * var(--scale));
+    }
+
+    .drag-flow {
+      position: absolute;
+      left: calc(270px * var(--scale));
+      top: calc(158px * var(--scale));
+      width: calc(180px * var(--scale));
+      height: calc(28px * var(--scale));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .gatekeeper-intro {
+      position: absolute;
+      left: calc(40px * var(--scale));
+      top: calc(268px * var(--scale));
+      width: calc(640px * var(--scale));
+      font-size: calc(12px * var(--scale));
+      font-weight: 400;
+      color: #B0A89C;
+      text-align: center;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    .terminal-box {
+      position: absolute;
+      left: calc(40px * var(--scale));
+      top: calc(296px * var(--scale));
+      width: calc(640px * var(--scale));
+      height: calc(88px * var(--scale));
+      background: rgba(11, 14, 26, 0.92);
+      border: calc(1px * var(--scale)) solid #3A3550;
+      border-radius: calc(8px * var(--scale));
+      box-shadow: 0 calc(8px * var(--scale)) calc(24px * var(--scale)) rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+
+    .terminal-header {
+      height: calc(24px * var(--scale));
+      background: #131728;
+      border-bottom: calc(1px * var(--scale)) solid #1C223A;
+      display: flex;
+      align-items: center;
+      padding: 0 calc(12px * var(--scale));
+      flex-shrink: 0;
+    }
+
+    .terminal-dots {
+      display: flex;
+      gap: calc(6px * var(--scale));
+    }
+
+    .dot {
+      width: calc(8px * var(--scale));
+      height: calc(8px * var(--scale));
+      border-radius: 50%;
+    }
+
+    .dot-red { background: #FF5F56; }
+    .dot-yellow { background: #FFBD2E; }
+    .dot-green { background: #27C93F; }
+
+    .terminal-body {
+      padding: calc(10px * var(--scale)) calc(14px * var(--scale));
+      flex-grow: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: calc(12px * var(--scale));
+      line-height: 1.45;
+    }
+
+    .code-line {
+      color: #8FE3A3;
+      white-space: pre;
+      margin: 0;
+    }
+
+    .prompt-char {
+      color: #6C7A9C;
+      user-select: none;
+      margin-right: calc(6px * var(--scale));
+    }
+
+    .footer-note {
+      position: absolute;
+      left: calc(40px * var(--scale));
+      top: calc(398px * var(--scale));
+      width: calc(640px * var(--scale));
+      font-size: calc(11px * var(--scale));
+      font-weight: 400;
+      color: #B0A89C;
+      text-align: center;
+      margin: 0;
+      opacity: 0.85;
+      line-height: 1.35;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" data-od-id="installer-background-container">
+
+    <div class="instruction-zone" data-od-id="instruction-zone">
+      <h1 class="main-instruction" data-od-id="main-instruction">Drag ParseKit to Applications to install</h1>
+    </div>
+
+    <div class="target-well left-well" data-od-id="target-well-left"></div>
+    <div class="target-well right-well" data-od-id="target-well-right"></div>
+
+    <div class="label-capsule left-capsule" data-od-id="label-capsule-left"></div>
+    <div class="label-capsule right-capsule" data-od-id="label-capsule-right"></div>
+
+    <div class="drag-flow" data-od-id="drag-flow-indicator">
+      <svg width="100%" height="100%" viewBox="0 0 120 24" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <path d="M10 4L18 12L10 20" stroke="#D9A86C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.35"/>
+        <path d="M30 4L38 12L30 20" stroke="#D9A86C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.55"/>
+        <path d="M50 4L58 12L50 20" stroke="#D9A86C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.75"/>
+        <path d="M70 4L78 12L70 20" stroke="#D9A86C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
+        <path d="M90 4L98 12L90 20" stroke="#D9A86C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" opacity="1"/>
+      </svg>
+    </div>
+
+    <p class="gatekeeper-intro" data-od-id="gatekeeper-intro">If macOS blocks first launch, paste this in Terminal after installing:</p>
+
+    <div class="terminal-box" data-od-id="terminal-troubleshooter">
+      <div class="terminal-header">
+        <div class="terminal-dots">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+        </div>
+      </div>
+      <div class="terminal-body">
+        <p class="code-line" data-od-id="terminal-command-line-1"><span class="prompt-char">$</span>xattr -cr /Applications/ParseKit.app && \</p>
+        <p class="code-line" data-od-id="terminal-command-line-2"><span class="prompt-char"> </span>xattr -d com.apple.FinderInfo /Applications/ParseKit.app</p>
+      </div>
+    </div>
+
+    <p class="footer-note" data-od-id="footer-note">PDF works out of the box · Word/Excel/images need converters (Settings → File Support)</p>
+
+  </div>
+</body>
+</html>
