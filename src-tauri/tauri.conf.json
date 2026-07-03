@@ -64,22 +64,22 @@
     "macOS": {
       "infoPlist": "Info.plist",
       "dmg": {
-        "background": "../scripts/dmg/dmg-background.png",
+        "background": "../scripts/dmg/background@2x.png",
         "windowSize": {
-          "width": 640,
-          "height": 440
+          "width": 720,
+          "height": 460
         },
         "windowPosition": {
           "x": 200,
           "y": 120
         },
         "appPosition": {
-          "x": 155,
-          "y": 210
+          "x": 190,
+          "y": 172
         },
         "applicationFolderPosition": {
-          "x": 455,
-          "y": 210
+          "x": 530,
+          "y": 172
         }
       }
     },
