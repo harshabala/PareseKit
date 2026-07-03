@@ -134,30 +134,6 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     )
   }
 
-  func drawIconLabel(_ text: String, centerX: CGFloat, yFromTop: CGFloat) {
-    let paragraph = NSMutableParagraphStyle()
-    paragraph.alignment = .center
-    let font = NSFont.systemFont(ofSize: 13 * scale, weight: .medium)
-    let attrs: [NSAttributedString.Key: Any] = [
-      .font: font,
-      .foregroundColor: ivory,
-      .paragraphStyle: paragraph,
-    ]
-    let w: CGFloat = 140 * scale
-    let h: CGFloat = 18 * scale
-    let rect = NSRect(
-      x: (centerX * scale) - (w / 2),
-      y: topY(yFromTop + 18, scale: 1) * scale,
-      width: w,
-      height: h
-    )
-    (text as NSString).draw(
-      with: rect,
-      options: [.usesLineFragmentOrigin, .usesFontLeading],
-      attributes: attrs
-    )
-  }
-
   func drawDragChevron(at x: CGFloat, y: CGFloat, opacity: CGFloat) {
     let s = scale
     let cx = x * s
@@ -203,10 +179,8 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     height: 28
   )
 
-  // Finder draws icons only (shows item info = false); labels baked in white below.
+  // Finder draws icons + white labels (icvp backgroundColor patched in patch-ds-store.py).
   drawDragCueBetweenIcons()
-  drawIconLabel("ParseKit", centerX: parseKitCenter.x, yFromTop: 242)
-  drawIconLabel("Applications", centerX: applicationsCenter.x, yFromTop: 242)
 
   drawCenteredText(
     "If macOS blocks first launch, paste this in Terminal after installing:",

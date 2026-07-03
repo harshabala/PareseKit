@@ -7,6 +7,8 @@ VERSION="$(node -p "require('$ROOT/package.json').version")"
 DMG_DIR="$ROOT/src-tauri/target/release/bundle/dmg"
 DMG_OUT="$DMG_DIR/ParseKit_${VERSION}_aarch64.dmg"
 CREATE_DMG="$ROOT/scripts/dmg/create-dmg.sh"
+DMG_SCRIPTS="$ROOT/scripts/dmg"
+DMG_VENV="$DMG_SCRIPTS/.venv"
 DMG_ASSETS="$ROOT/packaging/dmg/assets"
 BACKGROUND_1X="$DMG_ASSETS/background.png"
 BACKGROUND_2X="$DMG_ASSETS/background@2x.png"
@@ -65,14 +67,24 @@ ditto --norsrc "$STAGE_APP" "$DMG_STAGE/ParseKit.app"
 rm -f "$DMG_OUT"
 
 # Locked coordinate contract — must match packaging/dmg/background.html layout.
-# create-dmg positions icons by top-left; wells center at (190,172) and (530,172).
+# create-dmg/AppleScript position = top-left; centers (190,172)/(530,172) → (126,108)/(466,108).
 DMG_W=720
 DMG_H=460
 ICON_SIZE=128
-APP_ICON_X=126   # 190 - ICON_SIZE/2
-APP_ICON_Y=108   # 172 - ICON_SIZE/2
-APPS_LINK_X=466  # 530 - ICON_SIZE/2
+APP_ICON_X=126
+APP_ICON_Y=108
+APPS_LINK_X=466
 APPS_LINK_Y=108
+
+ensure_dmg_patch_venv() {
+  if [[ ! -x "$DMG_VENV/bin/python" ]]; then
+    python3 -m venv "$DMG_VENV"
+    "$DMG_VENV/bin/pip" install ds-store -q
+  fi
+}
+ensure_dmg_patch_venv
+export PARSEKIT_DMG_PATCH_PYTHON="$DMG_VENV/bin/python"
+export PARSEKIT_DMG_PATCH_SCRIPT="$DMG_SCRIPTS/patch-ds-store.py"
 
 "$CREATE_DMG" \
   --volname "ParseKit" \

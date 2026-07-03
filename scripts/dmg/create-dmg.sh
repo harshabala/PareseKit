@@ -558,6 +558,34 @@ rm -rf "${MOUNT_DIR}/.fseventsd" || true
 
 hdiutil_detach_retry "${DEV_NAME}"
 
+# Patch after detach — Finder finalizes icvp/background in .DS_Store on unmount.
+if [[ -n "${PARSEKIT_DMG_PATCH_SCRIPT:-}" && -f "${PARSEKIT_DMG_PATCH_PYTHON:-}" && -f "$PARSEKIT_DMG_PATCH_SCRIPT" ]]; then
+	echo "Patching .DS_Store for white Finder labels on dark background..."
+	PATCH_MOUNT="$(mktemp -d /tmp/parsekit-dmg-patch.XXXXXX)"
+	PATCH_DEV="$(hdiutil attach -readwrite -noverify -nobrowse -mountpoint "${PATCH_MOUNT}" "${DMG_TEMP_NAME}" 2>/dev/null | grep -E '^/dev/' | ${HDIUTIL_FILTER} | awk '{print $1}')"
+	if [[ -n "${PATCH_DEV}" ]]; then
+		if [[ ! -f "${PATCH_MOUNT}/.DS_Store" ]]; then
+			if [[ "${FILESYSTEM}" == "APFS" ]]; then
+				PATCH_MOUNT="$(find_mount_dir "${PATCH_DEV}")"
+			else
+				PATCH_MOUNT="$(find_mount_dir "${PATCH_DEV}s")"
+			fi
+		fi
+		if [[ -n "${PATCH_MOUNT}" && -f "${PATCH_MOUNT}/.DS_Store" ]]; then
+			if ! "$PARSEKIT_DMG_PATCH_PYTHON" "$PARSEKIT_DMG_PATCH_SCRIPT" "${PATCH_MOUNT}/.DS_Store"; then
+				echo >&2 "warn: .DS_Store label-color patch failed (DMG will still be created)"
+			fi
+		else
+			echo >&2 "warn: could not locate .DS_Store for label-color patch"
+		fi
+		hdiutil_detach_retry "${PATCH_DEV}" >/dev/null 2>&1 || true
+		rmdir "${PATCH_MOUNT}" 2>/dev/null || true
+	else
+		echo >&2 "warn: could not re-mount DMG temp image for label-color patch"
+		rmdir "${PATCH_MOUNT}" 2>/dev/null || true
+	fi
+fi
+
 # Compress image and optionally encrypt
 if [[ $ENABLE_ENCRYPTION -eq 0 ]]; then
 	echo "Compressing disk image..."
