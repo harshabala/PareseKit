@@ -1,6 +1,6 @@
 {
   "productName": "ParseKit",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "identifier": "com.harshabala.parsekit",
   "build": {
     "frontendDist": "../dist",
