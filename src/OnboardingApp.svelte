@@ -56,9 +56,14 @@
 
     ready = true;
     try {
-      await getCurrentWindow().setFocus();
+      await invoke("show_onboarding_window");
     } catch {
-      /* ignore */
+      try {
+        await getCurrentWindow().show();
+        await getCurrentWindow().setFocus();
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -83,11 +88,11 @@
 
 {#if ready}
   <OnboardingScreen
-    initialStep={showInstallHint ? 1 : 2}
     {showInstallHint}
     {outputDirSet}
-    {filesReady}
+    filesReady={false}
     onComplete={finishOnboarding}
     onPickOutput={handlePickOutput}
+    onSkip={finishOnboarding}
   />
 {/if}

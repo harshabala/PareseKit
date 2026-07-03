@@ -197,6 +197,10 @@ body {
   font-synthesis: none;
 }
 
+body[data-window="onboarding"] {
+  overflow: auto;
+}
+
 ::selection {
   background: color-mix(in srgb, var(--accent-color) 35%, transparent);
   color: var(--text-primary);

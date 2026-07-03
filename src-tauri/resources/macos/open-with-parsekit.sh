@@ -153,16 +153,7 @@ def trash_original(path):
     if os.path.isfile(cli) and os.access(cli, os.X_OK):
         result = subprocess.run([cli, "trash", path], capture_output=True, check=False)
         return result.returncode == 0
-    escaped = path.replace("\\", "\\\\").replace('"', '\\"')
-    result = subprocess.run(
-        [
-            "osascript",
-            "-e",
-            f'tell application "Finder" to delete POSIX file "{escaped}"',
-        ],
-        check=False,
-    )
-    return result.returncode == 0
+    return False
 
 if replace_original and not output_dir:
     notify("Set an output folder in ParseKit Settings before using Replace Original.")

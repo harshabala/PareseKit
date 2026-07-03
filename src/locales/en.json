@@ -24,6 +24,8 @@
     "lead": "Make every document ready for AI. Complete these steps for your first batch.",
     "dismiss": "Got it",
     "progress": "Step {current} of {total}",
+    "terminalCommand": "Terminal fix command",
+    "skip": "Skip for now",
     "installTitle": "Install ParseKit",
     "installSubtitle": "Drag the app into your Applications folder to finish installation.",
     "installHelper": "If macOS blocks the first launch, run this command in Terminal once.",

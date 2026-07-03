@@ -1434,6 +1434,12 @@ pub fn run() {
             }
             if let Some(onboarding) = app.get_webview_window("onboarding") {
                 let _ = onboarding.hide();
+                let app_for_onboarding = app.handle().clone();
+                onboarding.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { .. } = event {
+                        let _ = close_onboarding_window(app_for_onboarding.clone());
+                    }
+                });
             }
             let w = window.clone();
             let popover_for_events = popover_state.clone();

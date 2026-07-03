@@ -422,12 +422,8 @@
     hasSuccessfulParse = await getSetting("hasSuccessfulParse", false);
     configCollapsed = hasSuccessfulParse;
     const onboardingDone = await getSetting("hasCompletedOnboarding", false);
-    if (!onboardingDone) {
-      try {
-        await invoke("show_onboarding_window");
-      } catch {
-        void openPopoverFromExternal();
-      }
+    if (onboardingDone) {
+      void openPopoverFromExternal();
     }
     await resolveDefaultWorkers(await getSetting<number>("workers", 0));
     launchAtLogin = await getSetting<boolean>("launchAtLogin", false);
@@ -857,12 +853,7 @@
   }
 
   async function openFolder(path: string) {
-    try {
-      await invoke("open_in_finder", { path });
-    } catch {
-      const { Command } = await import("@tauri-apps/plugin-shell");
-      await Command.create("open", [path]).spawn();
-    }
+    await invoke("open_in_finder", { path });
   }
 
   function handleKeydown(e: KeyboardEvent) {

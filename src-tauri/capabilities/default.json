@@ -19,15 +19,13 @@
     {
       "identifier": "shell:allow-spawn",
       "allow": [
-        { "name": "binaries/parsekit-sidecar", "sidecar": true, "args": false },
-        { "name": "open", "cmd": "open", "args": true }
+        { "name": "binaries/parsekit-sidecar", "sidecar": true, "args": false }
       ]
     },
     {
       "identifier": "shell:allow-execute",
       "allow": [
-        { "name": "binaries/parsekit-sidecar", "sidecar": true, "args": false },
-        { "name": "open", "cmd": "open", "args": true }
+        { "name": "binaries/parsekit-sidecar", "sidecar": true, "args": false }
       ]
     }
   ]

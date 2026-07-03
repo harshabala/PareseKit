@@ -10,19 +10,19 @@
     "https://github.com/harshabala/parsekit/blob/master/docs/INSTALL.md";
 
   let {
-    initialStep,
     showInstallHint,
     outputDirSet,
     filesReady,
     onComplete,
     onPickOutput,
+    onSkip,
   }: {
-    initialStep: number;
     showInstallHint: boolean;
     outputDirSet: boolean;
     filesReady: boolean;
     onComplete: () => void;
     onPickOutput: () => void;
+    onSkip: () => void;
   } = $props();
 
   const reducedMotion = $derived(prefersReducedMotion.current);
@@ -30,7 +30,7 @@
   const hintFadeOutParams = $derived(hintFadeOut(reducedMotion));
 
   const totalSteps = $derived(showInstallHint ? 2 : 1);
-  let step = $state(initialStep);
+  let step = $state(1);
 
   let gatekeeperCopied = $state(false);
   let gatekeeperCopyError = $state<string | null>(null);
@@ -94,16 +94,23 @@
 </script>
 
 <div class="onboarding-root">
-  <div class="onboarding-progress" aria-live="polite">
+  <button type="button" class="onboarding-skip" onclick={onSkip}>
+    {t("onboarding.skip")}
+  </button>
+  <div
+    class="onboarding-progress"
+    role="progressbar"
+    aria-valuenow={step}
+    aria-valuemin={1}
+    aria-valuemax={totalSteps}
+    aria-label={t("onboarding.progress", { current: step, total: totalSteps })}
+  >
     <span>{t("onboarding.progress", { current: step, total: totalSteps })}</span>
     <div class="onboarding-progress-dots" aria-hidden="true">
       {#each Array(totalSteps) as _, i}
         {@const n = i + 1}
         {#if i > 0}<span class="onboarding-progress-line"></span>{/if}
-        <span
-          class="onboarding-progress-dot"
-          class:active={n === step || (totalSteps === 1 && n === 1)}
-        ></span>
+        <span class="onboarding-progress-dot" class:active={n === step}></span>
       {/each}
     </div>
   </div>
@@ -111,8 +118,10 @@
   <div class="onboarding-content">
     {#if step === 1 && showInstallHint}
       <div class="onboarding-step-panel" in:fade={{ duration: reducedMotion ? 0 : 200 }}>
-        <h1 class="onboarding-title">{t("onboarding.installTitle")}</h1>
-        <p class="onboarding-subtitle">{t("onboarding.installSubtitle")}</p>
+        <div class="onboarding-header-group">
+          <h1 class="onboarding-title">{t("onboarding.installTitle")}</h1>
+          <p class="onboarding-subtitle">{t("onboarding.installSubtitle")}</p>
+        </div>
 
         <div class="onboarding-hero" aria-hidden="true">
           <div class="onboarding-hero-row">
@@ -155,7 +164,7 @@
 
         <p class="onboarding-helper">{t("onboarding.installHelper")}</p>
 
-        <div class="onboarding-code-card" role="region" aria-label={t("gatekeeper.title")}>
+        <div class="onboarding-code-card" role="region" aria-label={t("onboarding.terminalCommand")}>
           <div class="onboarding-code-toolbar">
             <div class="onboarding-traffic-lights" aria-hidden="true">
               <span></span><span></span><span></span>
@@ -210,8 +219,10 @@
       </div>
     {:else}
       <div class="onboarding-step-panel" in:fade={{ duration: reducedMotion ? 0 : 200 }}>
-        <h1 class="onboarding-title">{t("onboarding.getStartedTitle")}</h1>
-        <p class="onboarding-subtitle">{t("onboarding.getStartedSubtitle")}</p>
+        <div class="onboarding-header-group">
+          <h1 class="onboarding-title">{t("onboarding.getStartedTitle")}</h1>
+          <p class="onboarding-subtitle">{t("onboarding.getStartedSubtitle")}</p>
+        </div>
 
         <ol class="onboarding-steps-list">
           <li class:done={step1Done}>
