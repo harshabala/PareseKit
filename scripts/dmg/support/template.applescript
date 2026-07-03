@@ -26,6 +26,7 @@ on run (volumeName)
 				set icon size to ICON_SIZE
 				set text size to TEXT_SIZE
 				set arrangement to not arranged
+				set shows item info to false
 			end tell
 			BACKGROUND_CLAUSE
 

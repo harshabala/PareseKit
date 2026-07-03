@@ -134,27 +134,58 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     )
   }
 
-  func drawDragArrow(from startX: CGFloat, to endX: CGFloat, y: CGFloat) {
-    let s = scale
-    let cy = topY(y, scale: 1) * scale
-    let sx = startX * s
-    let ex = endX * s
-    gold.withAlphaComponent(0.85).setStroke()
-    let shaft = NSBezierPath()
-    shaft.lineWidth = 2.5 * s
-    shaft.lineCapStyle = .round
-    shaft.move(to: NSPoint(x: sx, y: cy))
-    shaft.line(to: NSPoint(x: ex - 14 * s, y: cy))
-    shaft.stroke()
+  func drawIconLabel(_ text: String, centerX: CGFloat, yFromTop: CGFloat) {
+    let paragraph = NSMutableParagraphStyle()
+    paragraph.alignment = .center
+    let font = NSFont.systemFont(ofSize: 13 * scale, weight: .medium)
+    let attrs: [NSAttributedString.Key: Any] = [
+      .font: font,
+      .foregroundColor: ivory,
+      .paragraphStyle: paragraph,
+    ]
+    let w: CGFloat = 140 * scale
+    let h: CGFloat = 18 * scale
+    let rect = NSRect(
+      x: (centerX * scale) - (w / 2),
+      y: topY(yFromTop + 18, scale: 1) * scale,
+      width: w,
+      height: h
+    )
+    (text as NSString).draw(
+      with: rect,
+      options: [.usesLineFragmentOrigin, .usesFontLeading],
+      attributes: attrs
+    )
+  }
 
-    let head = NSBezierPath()
-    head.lineWidth = 2.5 * s
-    head.lineCapStyle = .round
-    head.lineJoinStyle = .round
-    head.move(to: NSPoint(x: ex - 22 * s, y: cy + 10 * s))
-    head.line(to: NSPoint(x: ex, y: cy))
-    head.line(to: NSPoint(x: ex - 22 * s, y: cy - 10 * s))
-    head.stroke()
+  func drawDragChevron(at x: CGFloat, y: CGFloat, opacity: CGFloat) {
+    let s = scale
+    let cx = x * s
+    let cy = topY(y, scale: 1) * scale
+    gold.withAlphaComponent(opacity).setStroke()
+    let path = NSBezierPath()
+    path.lineWidth = 3 * s
+    path.lineCapStyle = .round
+    path.lineJoinStyle = .round
+    path.move(to: NSPoint(x: cx - 9 * s, y: cy + 9 * s))
+    path.line(to: NSPoint(x: cx, y: cy))
+    path.line(to: NSPoint(x: cx - 9 * s, y: cy - 9 * s))
+    path.stroke()
+  }
+
+  func drawDragCueBetweenIcons() {
+    // Icon top-left (126,108), size 128 → centers (190,172) and (530,172).
+    let iconSize: CGFloat = 128
+    let gapStart = parseKitCenter.x + iconSize / 2 + 10
+    let gapEnd = applicationsCenter.x - iconSize / 2 - 10
+    let chevronY = parseKitCenter.y
+    let chevronXs: [CGFloat] = [0.12, 0.32, 0.5, 0.68, 0.88].map {
+      gapStart + (gapEnd - gapStart) * $0
+    }
+    let opacities: [CGFloat] = [0.45, 0.62, 0.78, 0.9, 1.0]
+    for (x, opacity) in zip(chevronXs, opacities) {
+      drawDragChevron(at: x, y: chevronY, opacity: opacity)
+    }
   }
 
   let primaryFont = NSFont.systemFont(ofSize: 19 * scale, weight: .semibold)
@@ -172,8 +203,10 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     height: 28
   )
 
-  // Leave icon zones empty — Finder draws icons + labels. No wells/capsules.
-  drawDragArrow(from: 282, to: 438, y: 172)
+  // Finder draws icons only (shows item info = false); labels baked in white below.
+  drawDragCueBetweenIcons()
+  drawIconLabel("ParseKit", centerX: parseKitCenter.x, yFromTop: 242)
+  drawIconLabel("Applications", centerX: applicationsCenter.x, yFromTop: 242)
 
   drawCenteredText(
     "If macOS blocks first launch, paste this in Terminal after installing:",
