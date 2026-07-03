@@ -112,9 +112,15 @@
 </script>
 
 <div class="deps-preflight">
-  <div class="deps-preflight-header">
+  <div class="settings-section-header deps-preflight-header">
     <span class="settings-section-title">{t("deps.title")}</span>
-    <button type="button" class="secondary deps-refresh-btn" disabled={loading} onclick={() => refresh()}>
+    <button
+      type="button"
+      class="secondary deps-refresh-btn"
+      disabled={loading}
+      aria-busy={loading}
+      onclick={() => refresh()}
+    >
       {loading ? t("deps.checking") : t("deps.recheck")}
     </button>
   </div>
@@ -127,11 +133,15 @@
   {/if}
 
   {#if error}
-    <p class="settings-hint deps-error" transition:fade={{ duration: reducedMotion ? 0 : 120 }}>{error}</p>
+    <p class="settings-hint deps-error" role="alert" transition:fade={{ duration: reducedMotion ? 0 : 120 }}>
+      {error}
+    </p>
   {/if}
 
   {#if copyError}
-    <p class="settings-hint deps-error" transition:fade={{ duration: reducedMotion ? 0 : 120 }}>{copyError}</p>
+    <p class="settings-hint deps-error" role="alert" transition:fade={{ duration: reducedMotion ? 0 : 120 }}>
+      {copyError}
+    </p>
   {/if}
 
   {#if listVisible || !loading}

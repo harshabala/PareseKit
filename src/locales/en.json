@@ -23,7 +23,8 @@
     "title": "Get started",
     "lead": "Make every document ready for AI. Complete these steps for your first batch.",
     "dismiss": "Got it",
-    "installHint": "Drag ParseKit to Applications (not Desktop), then quit and reopen from Applications. If macOS blocks launch, right-click → Open once.",
+    "installHint": "Drag ParseKit to Applications (not Desktop), then quit and reopen from Applications. If macOS blocks launch, open Settings → General → First launch blocked? and copy the fix command.",
+    "formatsHint": "PDF works out of the box. Word, Excel, PowerPoint, and images need extra converters — check Settings → File Support after your first launch.",
     "chooseOutput": "Choose output folder",
     "stepOutput": "Pick where Markdown files are saved",
     "stepFiles": "Drop files or a folder below",
@@ -166,7 +167,12 @@
     "empty": "No batches yet. Run a parse to see history here.",
     "hint": "Last {count} batches (newest first).",
     "rerun": "Re-run",
-    "saveErrors": "Save errors"
+    "success": "{count} files parsed successfully",
+    "successOne": "1 file parsed successfully",
+    "copyErrors": "Copy errors",
+    "errorsCopied": "Copied!",
+    "copyConfirm": "Error report copied to clipboard — paste it when reporting issues.",
+    "copyFailed": "Could not copy to clipboard."
   },
   "errors": {
     "addFiles": "Add files or a folder to parse.",

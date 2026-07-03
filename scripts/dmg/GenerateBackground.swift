@@ -12,7 +12,7 @@ let windowW: CGFloat = 640
 let windowH: CGFloat = 440
 let width = windowW * scale
 let height = windowH * scale
-let margin: CGFloat = 40 * scale
+let margin: CGFloat = 36 * scale
 
 guard
   let rep = NSBitmapImageRep(
@@ -31,7 +31,6 @@ else {
   fputs("Failed to create bitmap\n", stderr)
   exit(1)
 }
-// Pixel dimensions must match rep.size so drawing coordinates align with the bitmap.
 rep.size = NSSize(width: width, height: height)
 
 guard let ctx = NSGraphicsContext(bitmapImageRep: rep)?.cgContext else {
@@ -60,19 +59,92 @@ if let gradient = CGGradient(colorsSpace: space, colors: colors, locations: [0, 
   )
 }
 
-// Single instruction line at top — nothing drawn over the icon row (y ≈ 198 in create-dmg).
-let title = "Drag ParseKit to Applications"
+func drawCenteredLine(
+  _ text: String,
+  y: CGFloat,
+  font: NSFont,
+  color: NSColor,
+  maxWidth: CGFloat
+) {
+  let paragraph = NSMutableParagraphStyle()
+  paragraph.alignment = .center
+  paragraph.lineBreakMode = .byWordWrapping
+  let attrs: [NSAttributedString.Key: Any] = [
+    .font: font,
+    .foregroundColor: color,
+    .paragraphStyle: paragraph,
+  ]
+  let rect = CGRect(x: margin, y: y, width: maxWidth, height: 200)
+  (text as NSString).draw(
+    with: rect,
+    options: [.usesLineFragmentOrigin, .usesFontLeading],
+    attributes: attrs
+  )
+}
+
 let titleFont = NSFont.systemFont(ofSize: 22 * scale, weight: .semibold)
+let bodyFont = NSFont.systemFont(ofSize: 12 * scale, weight: .regular)
+let monoFont = NSFont.monospacedSystemFont(ofSize: 10.5 * scale, weight: .regular)
 let titleColor = NSColor(calibratedRed: 0.20, green: 0.17, blue: 0.14, alpha: 1)
-let titleAttrs: [NSAttributedString.Key: Any] = [
-  .font: titleFont,
-  .foregroundColor: titleColor,
+let bodyColor = NSColor(calibratedRed: 0.32, green: 0.28, blue: 0.24, alpha: 1)
+let monoColor = NSColor(calibratedRed: 0.22, green: 0.18, blue: 0.15, alpha: 1)
+let contentW = width - margin * 2
+
+// Top: drag instruction (above icon row ~y 198)
+drawCenteredLine(
+  "Drag ParseKit to Applications",
+  y: height - margin - 28,
+  font: titleFont,
+  color: titleColor,
+  maxWidth: contentW
+)
+
+// Bottom: Gatekeeper note + terminal command (below icon row)
+let gatekeeperNote =
+  "If macOS blocks first launch, paste this in Terminal after installing:"
+let gatekeeperCmd =
+  "xattr -cr /Applications/ParseKit.app && xattr -d com.apple.FinderInfo /Applications/ParseKit.app 2>/dev/null || true"
+
+drawCenteredLine(
+  gatekeeperNote,
+  y: 118,
+  font: bodyFont,
+  color: bodyColor,
+  maxWidth: contentW
+)
+
+// Command on a subtle pill
+let cmdAttrs: [NSAttributedString.Key: Any] = [
+  .font: monoFont,
+  .foregroundColor: monoColor,
 ]
-let titleSize = (title as NSString).size(withAttributes: titleAttrs)
-let titleX = (width - titleSize.width) / 2
-// Cocoa origin bottom-left: place near top with safe margin
-let titleY = height - margin - titleSize.height
-(title as NSString).draw(at: CGPoint(x: titleX, y: titleY), withAttributes: titleAttrs)
+let cmdSize = (gatekeeperCmd as NSString).size(withAttributes: cmdAttrs)
+let pillPadH: CGFloat = 12
+let pillPadV: CGFloat = 6
+let pillW = min(cmdSize.width + pillPadH * 2, contentW)
+let pillH = cmdSize.height + pillPadV * 2
+let pillX = (width - pillW) / 2
+let pillY: CGFloat = 72
+
+let pillPath = NSBezierPath(roundedRect: NSRect(x: pillX, y: pillY, width: pillW, height: pillH), xRadius: 8, yRadius: 8)
+NSColor(calibratedWhite: 1, alpha: 0.72).setFill()
+pillPath.fill()
+NSColor(calibratedRed: 0.55, green: 0.48, blue: 0.42, alpha: 0.55).setStroke()
+pillPath.lineWidth = 0.5
+pillPath.stroke()
+
+(gatekeeperCmd as NSString).draw(
+  at: CGPoint(x: pillX + pillPadH, y: pillY + pillPadV),
+  withAttributes: cmdAttrs
+)
+
+drawCenteredLine(
+  "PDF works out of the box · Word/Excel/images need converters (Settings → File Support)",
+  y: 36,
+  font: NSFont.systemFont(ofSize: 10.5 * scale, weight: .medium),
+  color: bodyColor,
+  maxWidth: contentW
+)
 
 NSGraphicsContext.restoreGraphicsState()
 

@@ -23,7 +23,8 @@
     "title": "快速上手",
     "lead": "让每个文档都准备好交给 AI。完成以下步骤即可开始第一批转换。",
     "dismiss": "知道了",
-    "installHint": "请将 ParseKit 拖到「应用程序」（不要放在桌面），退出后从应用程序重新打开。若 macOS 阻止启动，请右键 → 打开一次。",
+    "installHint": "请将 ParseKit 拖到「应用程序」（不要放在桌面），退出后从应用程序重新打开。若 macOS 阻止启动，请打开设置 → 通用 → 首次启动被阻止？并复制修复命令。",
+    "formatsHint": "PDF 可直接解析。Word、Excel、PowerPoint 和图片需要额外转换工具 — 首次启动后请查看设置 → 文件支持。",
     "chooseOutput": "选择输出文件夹",
     "stepOutput": "选择 Markdown 保存位置",
     "stepFiles": "在下方拖放文件或文件夹",
@@ -165,7 +166,12 @@
     "empty": "暂无批次。运行解析后会显示在这里。",
     "hint": "最近 {count} 个批次（新的在前）。",
     "rerun": "重新运行",
-    "saveErrors": "保存错误"
+    "success": "已成功解析 {count} 个文件",
+    "successOne": "已成功解析 1 个文件",
+    "copyErrors": "复制错误",
+    "errorsCopied": "已复制",
+    "copyConfirm": "错误报告已复制到剪贴板，可在反馈问题时粘贴。",
+    "copyFailed": "无法复制到剪贴板。"
   },
   "errors": {
     "addFiles": "请添加文件或文件夹以解析。",

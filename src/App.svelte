@@ -881,42 +881,6 @@
     }
   }
 
-  function buildErrorReport(batch: BatchResult): string {
-    const lines = [
-      "# ParseKit error report",
-      "",
-      `- Date: ${batch.timestamp}`,
-      `- ParseKit version: ${appVersion}`,
-      `- Output format: ${batch.format.toUpperCase()}`,
-      `- Files: ${batch.fileCount} · Parsed: ${batch.parsed} · Errors: ${batch.errors}`,
-      `- Output folder: ${batch.outputDir}`,
-      "",
-      "## Failed files",
-      "",
-    ];
-    (batch.fileErrors ?? []).forEach((fe, i) => {
-      lines.push(`${i + 1}. ${fe.file}`);
-      lines.push(`   ${fe.error}`);
-      lines.push("");
-    });
-    return lines.join("\n");
-  }
-
-  async function saveErrorReport(batch: BatchResult) {
-    if (!batch.fileErrors || batch.fileErrors.length === 0) return;
-    const stamp = batch.timestamp.replace(/[:.]/g, "-").slice(0, 19);
-    const fileName = `parsekit-errors-${stamp}.md`;
-    try {
-      await invoke<string>("save_error_report", {
-        dir: batch.outputDir,
-        fileName,
-        contents: buildErrorReport(batch),
-      });
-    } catch (e) {
-      errorMsg = e instanceof Error ? e.message : String(e);
-    }
-  }
-
   function handleKeydown(e: KeyboardEvent) {
     if ((e.metaKey || e.ctrlKey) && e.key === "r") {
       e.preventDefault();
@@ -1178,6 +1142,7 @@
         />
         <RecentBatches
           {latestBatch}
+          {appVersion}
           showHistoryButton={recentBatches.length > 0}
           onOpenFolder={openFolder}
           onOpenHistory={openHistory}
@@ -1198,7 +1163,7 @@
             batches={recentBatches}
             onOpenFolder={openFolder}
             onRerun={rerunBatch}
-            onSaveErrors={saveErrorReport}
+            {appVersion}
             onClose={() => (showHistory = false)}
           />
         </div>

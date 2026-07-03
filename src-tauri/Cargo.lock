@@ -3197,7 +3197,7 @@ dependencies = [
 
 [[package]]
 name = "parsekit"
-version = "0.2.3"
+version = "0.2.4"
 dependencies = [
  "chrono",
  "liteparse",

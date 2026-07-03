@@ -9,11 +9,13 @@
   let {
     latestBatch,
     showHistoryButton = false,
+    appVersion = "0.0.0",
     onOpenFolder,
     onOpenHistory,
   }: {
     latestBatch: BatchResult | null;
     showHistoryButton?: boolean;
+    appVersion?: string;
     onOpenFolder: (path: string) => void;
     onOpenHistory: () => void;
   } = $props();
@@ -58,6 +60,6 @@
         </button>
       {/if}
     </div>
-    <BatchHistoryList batches={[latestBatch]} {onOpenFolder} />
+    <BatchHistoryList batches={[latestBatch]} {onOpenFolder} {appVersion} />
   </div>
 {/if}
