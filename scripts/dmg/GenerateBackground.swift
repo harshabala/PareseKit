@@ -178,7 +178,31 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     height: 28
   )
 
+  func drawIconLabel(_ text: String, centerX: CGFloat, yFromTop: CGFloat) {
+    let paragraph = NSMutableParagraphStyle()
+    paragraph.alignment = .center
+    let font = NSFont.systemFont(ofSize: 13 * scale, weight: .semibold)
+    let attrs: [NSAttributedString.Key: Any] = [
+      .font: font,
+      .foregroundColor: NSColor.white,
+      .paragraphStyle: paragraph,
+    ]
+    let rect = NSRect(
+      x: (centerX - 75) * scale,
+      y: topY(yFromTop + 18, scale: 1) * scale,
+      width: 150 * scale,
+      height: 18 * scale
+    )
+    (text as NSString).draw(
+      with: rect,
+      options: [.usesLineFragmentOrigin, .usesFontLeading],
+      attributes: attrs
+    )
+  }
+
   drawDragArrowBetweenIcons()
+  drawIconLabel("ParseKit", centerX: parseKitCenter.x, yFromTop: 236)
+  drawIconLabel("Applications", centerX: applicationsCenter.x, yFromTop: 236)
 
   drawCenteredText(
     "If macOS blocks first launch, paste this in Terminal after installing:",

@@ -1,18 +1,20 @@
 #!/usr/bin/env python3
-"""Patch DMG .DS_Store icvp in-place so Finder uses white labels on dark backgrounds.
+"""Rebuild DMG .DS_Store with dark icvp background for white Finder labels.
 
-Finder label color follows icvp backgroundColor*, not the PNG. create-dmg leaves
-these at white (1,1,1), producing dark labels. In-place patch preserves AppleScript
-settings (hide extension, icon positions, background alias).
+In-place icvp edits corrupt the buddy allocator on modern macOS. We read icvp/bwsp,
+apply the navy backgroundColor fix, and write a fresh store with icon positions.
 """
 from __future__ import annotations
 
 import copy
+import os
+import shutil
 import sys
 import time
 
-# Match packaging/dmg/background.html base (#12172B).
 NAVY_RGB = (18 / 255.0, 23 / 255.0, 43 / 255.0)
+PARSEKIT_ILOC = (126, 108)
+APPLICATIONS_ILOC = (466, 108)
 
 
 def patch(ds_store_path: str) -> None:
@@ -21,15 +23,31 @@ def patch(ds_store_path: str) -> None:
     last_err: Exception | None = None
     for _ in range(15):
         try:
-            store = DSStore.open(ds_store_path, "r+")
-            icvp = copy.deepcopy(store["."]["icvp"])
+            with DSStore.open(ds_store_path, "r") as src:
+                icvp = copy.deepcopy(src["."]["icvp"])
+                bwsp = src["."]["bwsp"]
+
             icvp["backgroundColorRed"] = NAVY_RGB[0]
             icvp["backgroundColorGreen"] = NAVY_RGB[1]
             icvp["backgroundColorBlue"] = NAVY_RGB[2]
             icvp["showItemInfo"] = False
-            store["."]["icvp"] = icvp
-            store.flush()
-            store.close()
+            icvp["textSize"] = 1.0
+            # backgroundType 2 + backgroundImageAlias must be preserved from src icvp.
+
+            tmp_path = os.path.join("/tmp", f"parsekit-dsstore-{os.getpid()}.patched")
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+
+            with DSStore.open(tmp_path, "w+") as out:
+                out["."]["bwsp"] = bwsp
+                out["."]["icvp"] = icvp
+                out["."]["icvl"] = ("type", b"icnv")
+                out["ParseKit.app"]["Iloc"] = PARSEKIT_ILOC
+                out["Applications"]["Iloc"] = APPLICATIONS_ILOC
+                out.flush()
+
+            shutil.copy2(tmp_path, ds_store_path)
+            os.remove(tmp_path)
             return
         except KeyError as err:
             last_err = err
@@ -46,7 +64,7 @@ def main() -> int:
         print(f"usage: {sys.argv[0]} <path-to-.DS_Store>", file=sys.stderr)
         return 1
     patch(sys.argv[1])
-    print(f"patched {sys.argv[1]} (icvp backgroundColor → navy)")
+    print(f"patched {sys.argv[1]}")
     return 0
 
 
