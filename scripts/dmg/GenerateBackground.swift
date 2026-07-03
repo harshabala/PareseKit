@@ -134,39 +134,27 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     )
   }
 
-  func drawWell(x: CGFloat, y: CGFloat) {
-    let rect = rectFromTop(x: x, y: y, w: 144, h: 144, scale: scale)
-    let path = NSBezierPath(roundedRect: rect, xRadius: 28 * scale, yRadius: 28 * scale)
-    NSColor(white: 1, alpha: 0.012).setFill()
-    path.fill()
-    NSColor(white: 1, alpha: 0.05).setStroke()
-    path.lineWidth = 1 * scale
-    path.stroke()
-  }
-
-  func drawLabelCapsule(x: CGFloat, y: CGFloat) {
-    let rect = rectFromTop(x: x, y: y, w: 130, h: 22, scale: scale)
-    let path = NSBezierPath(roundedRect: rect, xRadius: 11 * scale, yRadius: 11 * scale)
-    NSColor(calibratedRed: 0.071, green: 0.090, blue: 0.169, alpha: 0.55).setFill()
-    path.fill()
-    NSColor(white: 1, alpha: 0.06).setStroke()
-    path.lineWidth = 1 * scale
-    path.stroke()
-  }
-
-  func drawChevron(at x: CGFloat, y: CGFloat, opacity: CGFloat) {
-    let cx = x * scale
-    let cy = topY(y + 12, scale: 1) * scale
+  func drawDragArrow(from startX: CGFloat, to endX: CGFloat, y: CGFloat) {
     let s = scale
-    gold.withAlphaComponent(opacity).setStroke()
-    let path = NSBezierPath()
-    path.lineWidth = 2.5 * s
-    path.lineCapStyle = .round
-    path.lineJoinStyle = .round
-    path.move(to: NSPoint(x: cx, y: cy + 8 * s))
-    path.line(to: NSPoint(x: cx + 8 * s, y: cy))
-    path.line(to: NSPoint(x: cx, y: cy - 8 * s))
-    path.stroke()
+    let cy = topY(y, scale: 1) * scale
+    let sx = startX * s
+    let ex = endX * s
+    gold.withAlphaComponent(0.85).setStroke()
+    let shaft = NSBezierPath()
+    shaft.lineWidth = 2.5 * s
+    shaft.lineCapStyle = .round
+    shaft.move(to: NSPoint(x: sx, y: cy))
+    shaft.line(to: NSPoint(x: ex - 14 * s, y: cy))
+    shaft.stroke()
+
+    let head = NSBezierPath()
+    head.lineWidth = 2.5 * s
+    head.lineCapStyle = .round
+    head.lineJoinStyle = .round
+    head.move(to: NSPoint(x: ex - 22 * s, y: cy + 10 * s))
+    head.line(to: NSPoint(x: ex, y: cy))
+    head.line(to: NSPoint(x: ex - 22 * s, y: cy - 10 * s))
+    head.stroke()
   }
 
   let primaryFont = NSFont.systemFont(ofSize: 19 * scale, weight: .semibold)
@@ -184,16 +172,8 @@ func drawBackground(scale: CGFloat) -> NSBitmapImageRep? {
     height: 28
   )
 
-  drawWell(x: 118, y: 100)
-  drawWell(x: 458, y: 100)
-  drawLabelCapsule(x: 125, y: 244)
-  drawLabelCapsule(x: 465, y: 244)
-
-  let chevronXs: [CGFloat] = [282, 312, 342, 372, 402]
-  let chevronOpacities: [CGFloat] = [0.35, 0.55, 0.75, 0.9, 1.0]
-  for (x, opacity) in zip(chevronXs, chevronOpacities) {
-    drawChevron(at: x, y: 158, opacity: opacity)
-  }
+  // Leave icon zones empty — Finder draws icons + labels. No wells/capsules.
+  drawDragArrow(from: 282, to: 438, y: 172)
 
   drawCenteredText(
     "If macOS blocks first launch, paste this in Terminal after installing:",

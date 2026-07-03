@@ -27,6 +27,9 @@ if [[ "${SKIP_DMG_BACKGROUND_GEN:-}" != "1" ]]; then
     swift GenerateBackground.swift
     cp background.png background@2x.png "$DMG_ASSETS/"
   )
+  # Finder maps pixels→points via DPI: 1× @72dpi, 2× @144dpi (otherwise Retina misaligns art).
+  sips -s dpiWidth 72 -s dpiHeight 72 "$BACKGROUND_1X" >/dev/null
+  sips -s dpiWidth 144 -s dpiHeight 144 "$BACKGROUND_2X" >/dev/null
 fi
 
 for f in "$BACKGROUND_1X" "$BACKGROUND_2X"; do
