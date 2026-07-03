@@ -70,4 +70,6 @@ cargo build --release --manifest-path src-tauri/Cargo.toml --bin parsekit-sideca
 cp "src-tauri/target/release/parsekit-sidecar" "$OUT"
 chmod +x "$OUT"
 
+bash "$(dirname "$0")/bundle-pdfium.sh" "src-tauri/binaries"
+
 echo "Built sidecar: $OUT"

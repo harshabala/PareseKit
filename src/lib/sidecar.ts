@@ -70,6 +70,9 @@ function friendlySidecarMessage(raw: string): string {
   if (lower.includes("failed to create the path to the command")) {
     return `Parse engine binary missing next to the app. Run npm run build:sidecar, then restart. (${trimmed})`;
   }
+  if (lower.includes("pdfium") || lower.includes("libpdfium")) {
+    return `PDF engine library missing from this build. Reinstall ParseKit from the latest DMG, or run npm run build:sidecar and rebuild the app. (${trimmed})`;
+  }
   if (
     lower.includes("image too small to scale") ||
     lower.includes("line cannot be recognized")

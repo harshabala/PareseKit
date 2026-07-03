@@ -220,8 +220,29 @@ async fn run(config: SidecarConfig) -> Result<(), String> {
     Ok(())
 }
 
+/// LiteParse loads pdfium at runtime via `libpdfium.dylib`. Release builds bake the
+/// compile-machine cache path into the binary, so we point `PDFIUM_LIB_PATH` at the
+/// directory that contains the bundled dylib (next to this executable).
+fn ensure_pdfium_lib_path() {
+    if std::env::var_os("PDFIUM_LIB_PATH").is_some() {
+        return;
+    }
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
+    let Some(dir) = exe.parent() else {
+        return;
+    };
+    if dir.join("libpdfium.dylib").is_file() {
+        // SAFETY: called before any threads spawn; only sets process env for dlopen.
+        unsafe { std::env::set_var("PDFIUM_LIB_PATH", dir) };
+    }
+}
+
 #[tokio::main]
 async fn main() {
+    ensure_pdfium_lib_path();
+
     let stdin = io::stdin();
     let mut lines = stdin.lock().lines();
     let line = match lines.next() {
