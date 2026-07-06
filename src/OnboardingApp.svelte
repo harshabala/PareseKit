@@ -12,18 +12,12 @@
 
   let showInstallHint = $state(false);
   let outputDir = $state("");
-  let inputFileCount = $state(0);
   let ready = $state(false);
 
   const outputDirSet = $derived(!!outputDir);
-  const filesReady = $derived(inputFileCount > 0);
 
   onMount(() => {
-    document.body.dataset.window = "onboarding";
     void bootstrap();
-    return () => {
-      delete document.body.dataset.window;
-    };
   });
 
   async function bootstrap() {
@@ -38,7 +32,11 @@
 
     const onboardingDone = await getSetting("hasCompletedOnboarding", false);
     if (onboardingDone) {
-      await finishOnboarding();
+      try {
+        await invoke("close_onboarding_window");
+      } catch {
+        /* ignore */
+      }
       return;
     }
 
@@ -49,7 +47,7 @@
     }
 
     try {
-      showInstallHint = !(await invoke<boolean>("is_installed_in_applications"));
+      showInstallHint = await invoke<boolean>("should_show_install_step");
     } catch {
       showInstallHint = false;
     }
@@ -79,7 +77,6 @@
     await setSetting("hasCompletedOnboarding", true);
     try {
       await invoke("close_onboarding_window");
-      await invoke("show_main_window");
     } catch {
       /* ignore */
     }
@@ -90,9 +87,11 @@
   <OnboardingScreen
     {showInstallHint}
     {outputDirSet}
-    filesReady={false}
     onComplete={finishOnboarding}
     onPickOutput={handlePickOutput}
-    onSkip={finishOnboarding}
   />
+{:else}
+  <div class="onboarding-loading" aria-busy="true" aria-live="polite">
+    <span class="onboarding-loading-text">Loading…</span>
+  </div>
 {/if}

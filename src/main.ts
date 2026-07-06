@@ -12,6 +12,9 @@ function bootstrap() {
     const target = document.getElementById("app");
     if (!target) throw new Error("Mount target #app not found");
     const label = getCurrentWindow().label;
+    if (label === "onboarding" || label === "progress-hud") {
+      document.body.dataset.window = label;
+    }
     const component =
       label === "progress-hud"
         ? ProgressHudApp

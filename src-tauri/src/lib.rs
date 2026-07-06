@@ -208,6 +208,27 @@ fn popup_tray_menu<R: Runtime>(app: &AppHandle<R>, tray_state: &TrayMenuState) -
     window.popup_menu(&menu).map_err(|e| e.to_string())
 }
 
+/// `window.center()` can land on the wrong monitor in multi-display setups (e.g. pos -1600).
+fn center_on_primary_monitor<R: Runtime>(window: &WebviewWindow<R>) -> bool {
+    let Ok(win_size) = window.outer_size() else {
+        return false;
+    };
+    let Some(monitor) = window
+        .primary_monitor()
+        .ok()
+        .flatten()
+    else {
+        return window.center().is_ok();
+    };
+    let mon_pos = monitor.position();
+    let mon_size = monitor.size();
+    let x = mon_pos.x + (mon_size.width as i32 - win_size.width as i32) / 2;
+    let y = mon_pos.y + (mon_size.height as i32 - win_size.height as i32) / 2;
+    window
+        .set_position(PhysicalPosition::new(x, y))
+        .is_ok()
+}
+
 fn position_popover_under_tray<R: Runtime>(window: &WebviewWindow<R>, rect: &Rect) -> bool {
     popover_trace("Positioning: start (under tray)");
     let Ok(win_size) = window.outer_size() else {
@@ -266,9 +287,9 @@ fn show_popover<R: Runtime>(
     // Start grace before any show/focus work so tray-click focus-loss cannot instantly hide.
     popover.mark_opening();
 
-    // Center first so the panel is on-screen even if tray coordinates are wrong.
-    let _ = window.center();
-    popover_trace("Positioning: center()");
+    // Center on primary display first so the panel is on-screen even if tray coords are wrong.
+    let _ = center_on_primary_monitor(window);
+    popover_trace("Positioning: center(primary)");
     if let Some(r) = rect {
         let _ = position_popover_under_tray(window, r);
     } else {
@@ -742,15 +763,129 @@ fn check_dependencies() -> Result<Vec<DependencyStatus>, String> {
 }
 
 #[cfg(target_os = "macos")]
-#[tauri::command]
-fn is_installed_in_applications() -> bool {
+fn running_from_applications() -> bool {
+    std::env::current_exe()
+        .map(|p| p.to_string_lossy().contains("/Applications/ParseKit.app/"))
+        .unwrap_or(false)
+}
+
+#[cfg(target_os = "macos")]
+fn resolve_bundle_from_macos_dir(macos_dir: &Path) -> Option<std::path::PathBuf> {
+    let bundle = macos_dir.parent()?.parent()?;
+    let name = bundle.file_name()?.to_string_lossy();
+    if name == "ParseKit.app" || name.ends_with(".app") {
+        Some(bundle.to_path_buf())
+    } else {
+        None
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn resolve_app_bundle_from_exe(exe: &Path) -> Option<std::path::PathBuf> {
+    exe.parent()
+        .and_then(resolve_bundle_from_macos_dir)
+        .or_else(|| {
+            let bundle = exe.parent()?.parent()?.parent()?;
+            let name = bundle.file_name()?.to_string_lossy();
+            if name == "ParseKit.app" || name.ends_with(".app") {
+                Some(bundle.to_path_buf())
+            } else {
+                None
+            }
+        })
+}
+
+#[cfg(target_os = "macos")]
+fn resolve_running_bundle(app: &AppHandle) -> Option<std::path::PathBuf> {
+    if let Ok(exe_dir) = app.path().executable_dir() {
+        if let Some(bundle) = resolve_bundle_from_macos_dir(&exe_dir) {
+            return Some(bundle);
+        }
+    }
     std::env::current_exe()
         .ok()
-        .map(|p| {
-            p.to_string_lossy()
-                .contains("/Applications/ParseKit.app/")
-        })
-        .unwrap_or(false)
+        .and_then(|exe| resolve_app_bundle_from_exe(&exe))
+}
+
+#[cfg(target_os = "macos")]
+fn play_install_complete_sound() {
+    const SOUNDS: &[&str] = &[
+        "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/systemsound.bundle/usernames/Pop.aiff",
+        "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/systemsound.bundle/usernames/Glass.aiff",
+    ];
+    for sound in SOUNDS {
+        if Path::new(sound).is_file() {
+            let _ = std::process::Command::new("afplay").arg(sound).spawn();
+            return;
+        }
+    }
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn is_installed_in_applications() -> bool {
+    running_from_applications() || Path::new("/Applications/ParseKit.app").is_dir()
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn should_show_install_step(app: AppHandle) -> bool {
+    !running_from_applications() && resolve_running_bundle(&app).is_some()
+}
+
+#[cfg(target_os = "macos")]
+fn copy_bundle_to_applications(bundle: &Path) -> Result<(), String> {
+    let dest = Path::new("/Applications/ParseKit.app");
+    if dest.exists() {
+        trash::delete(dest).map_err(|e| format!("Could not replace existing ParseKit.app: {e}"))?;
+    }
+
+    let status = std::process::Command::new("/usr/bin/ditto")
+        .arg(bundle)
+        .arg(dest)
+        .status()
+        .map_err(|e| format!("Failed to copy ParseKit to Applications: {e}"))?;
+    if !status.success() {
+        return Err(
+            "Could not copy ParseKit to Applications. Check disk space and try again.".to_string(),
+        );
+    }
+    Ok(())
+}
+
+#[cfg(target_os = "macos")]
+#[tauri::command]
+fn install_and_relaunch(app: AppHandle) -> Result<(), String> {
+    if running_from_applications() {
+        return Ok(());
+    }
+
+    let bundle = resolve_running_bundle(&app).ok_or_else(|| {
+        "Open ParseKit from the DMG (double-click ParseKit.app), then try again.".to_string()
+    })?;
+
+    copy_bundle_to_applications(&bundle)?;
+    play_install_complete_sound();
+
+    std::process::Command::new("/usr/bin/open")
+        .args(["-a", "/Applications/ParseKit.app"])
+        .spawn()
+        .map_err(|e| format!("Installed, but could not reopen ParseKit: {e}"))?;
+
+    app.exit(0);
+    Ok(())
+}
+
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+fn should_show_install_step(_app: AppHandle) -> bool {
+    false
+}
+
+#[cfg(not(target_os = "macos"))]
+#[tauri::command]
+fn install_and_relaunch(_app: AppHandle) -> Result<(), String> {
+    Err("Installing to Applications is only supported on macOS.".to_string())
 }
 
 #[cfg(not(target_os = "macos"))]
@@ -1369,6 +1504,8 @@ pub fn run() {
             get_system_info,
             check_dependencies,
             is_installed_in_applications,
+            should_show_install_step,
+            install_and_relaunch,
             open_privacy_security_settings,
             gatekeeper_fix_command,
             copy_text_to_clipboard,

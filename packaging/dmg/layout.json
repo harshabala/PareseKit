@@ -1,0 +1,20 @@
+{
+  "window": { "width": 720, "height": 460 },
+  "iconSize": 144,
+  "parseKit": { "x": 188, "y": 164 },
+  "applications": { "x": 482, "y": 164 },
+  "parseKitCenter": { "x": 260, "y": 236 },
+  "applicationsCenter": { "x": 554, "y": 236 },
+  "background": "static",
+  "assets": {
+    "1x": "packaging/dmg/assets/background.png",
+    "2x": "packaging/dmg/assets/background@2x.png",
+    "master": "packaging/dmg/assets/background-master.png",
+    "dimensions": {
+      "1x": [720, 460],
+      "2x": [1440, 920],
+      "master": [2880, 1840]
+    }
+  },
+  "notes": "Frozen static artwork. Finder overlays ParseKit.app + Applications + labels only. Do not regenerate backgrounds."
+}

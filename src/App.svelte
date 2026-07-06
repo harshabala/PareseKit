@@ -421,10 +421,7 @@
     recentBatches = await getSetting<BatchResult[]>("recentBatches", []);
     hasSuccessfulParse = await getSetting("hasSuccessfulParse", false);
     configCollapsed = hasSuccessfulParse;
-    const onboardingDone = await getSetting("hasCompletedOnboarding", false);
-    if (onboardingDone) {
-      void openPopoverFromExternal();
-    }
+    // Popover opens from tray click after onboarding — not auto-shown on launch.
     await resolveDefaultWorkers(await getSetting<number>("workers", 0));
     launchAtLogin = await getSetting<boolean>("launchAtLogin", false);
     autoConvertOnCopy = await getSetting<boolean>("autoConvertOnCopy", false);

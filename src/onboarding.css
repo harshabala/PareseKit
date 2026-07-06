@@ -2,11 +2,18 @@
 
 body[data-window="onboarding"] {
   margin: 0;
+  height: 100vh;
   min-height: 100vh;
+  overflow: hidden;
   background: var(--onboarding-window-bg);
   color: var(--onboarding-text);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+}
+
+body[data-window="onboarding"] #app {
+  height: 100%;
+  min-height: 100%;
 }
 
 :root {
@@ -67,31 +74,60 @@ body[data-window="onboarding"] {
 
 .onboarding-root {
   box-sizing: border-box;
-  min-height: 100vh;
+  min-height: 100%;
+  height: 100%;
   display: flex;
   flex-direction: column;
   padding: var(--onboarding-margin);
   position: relative;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
-.onboarding-skip {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  font-size: 14px;
-  font-weight: 500;
+.onboarding-loading {
+  box-sizing: border-box;
+  min-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--onboarding-text-secondary);
-  background: none;
-  border: none;
-  padding: 8px 12px;
-  min-height: 40px;
-  cursor: pointer;
-  border-radius: 8px;
 }
 
-.onboarding-skip:hover {
-  color: var(--onboarding-text);
-  background: color-mix(in srgb, var(--onboarding-text) 6%, transparent);
+.onboarding-loading-text {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.onboarding-hero-note {
+  margin: 0;
+  max-width: 480px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--onboarding-text-tertiary);
+}
+
+.onboarding-install-icon {
+  width: 128px;
+  height: 128px;
+  border-radius: var(--onboarding-radius-icon);
+  object-fit: contain;
+}
+
+.onboarding-btn-install {
+  min-width: 220px;
+}
+
+.onboarding-error {
+  color: #ff3b30;
+}
+
+.onboarding-actions-install {
+  margin-top: 0;
+}
+
+.onboarding-btn-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .onboarding-progress {
@@ -516,6 +552,45 @@ body[data-window="onboarding"] {
 @keyframes onboarding-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-height: 680px) {
+  :root {
+    --onboarding-margin: 28px;
+    --onboarding-section-gap: 20px;
+  }
+
+  .onboarding-title {
+    font-size: 28px;
+  }
+
+  .onboarding-subtitle {
+    font-size: 15px;
+  }
+
+  .onboarding-hero-row {
+    gap: 32px;
+  }
+
+  .onboarding-icon-img,
+  .onboarding-folder-icon {
+    width: 96px;
+    height: 96px;
+  }
+
+  .onboarding-folder-icon svg {
+    width: 72px;
+    height: 72px;
+  }
+
+  .onboarding-icon-slot {
+    width: 112px;
+  }
+
+  .onboarding-code-body {
+    padding: 16px;
+    font-size: 13px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -105,7 +105,7 @@ Options:
   --text-size <text_size>
       set window text size (10-16)
   --icon-size <icon_size>
-      set window icons size (up to 128)
+      set window icons size (up to 144)
   --icon file_name <x> <y>
       set position of the file's icon
   --hide-extension <file_name>

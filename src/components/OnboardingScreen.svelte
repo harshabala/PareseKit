@@ -6,23 +6,16 @@
   import { hintFadeIn, hintFadeOut } from "../lib/motion";
   import appIcon from "../assets/app-icon.png";
 
-  const INSTALL_DOCS_URL =
-    "https://github.com/harshabala/parsekit/blob/master/docs/INSTALL.md";
-
   let {
     showInstallHint,
     outputDirSet,
-    filesReady,
     onComplete,
     onPickOutput,
-    onSkip,
   }: {
     showInstallHint: boolean;
     outputDirSet: boolean;
-    filesReady: boolean;
     onComplete: () => void;
     onPickOutput: () => void;
-    onSkip: () => void;
   } = $props();
 
   const reducedMotion = $derived(prefersReducedMotion.current);
@@ -35,9 +28,11 @@
   let gatekeeperCopied = $state(false);
   let gatekeeperCopyError = $state<string | null>(null);
   let gatekeeperCommand = $state("");
+  let installing = $state(false);
+  let installError = $state<string | null>(null);
 
   const step1Done = $derived(outputDirSet);
-  const step2Done = $derived(filesReady);
+  const step2Done = $derived(false);
 
   $effect(() => {
     void loadGatekeeperCommand();
@@ -72,31 +67,20 @@
     }
   }
 
-  async function openApplications() {
+  async function installParseKit() {
+    installError = null;
+    installing = true;
     try {
-      await invoke("open_in_finder", { path: "/Applications" });
-    } catch {
-      /* ignore */
+      await invoke("install_and_relaunch");
+    } catch (e) {
+      installError =
+        e instanceof Error ? e.message : String(e) || t("onboarding.installFailed");
+      installing = false;
     }
-  }
-
-  function learnMore() {
-    window.open(INSTALL_DOCS_URL, "_blank", "noopener,noreferrer");
-  }
-
-  function continueInstall() {
-    if (showInstallHint && step === 1) {
-      step = 2;
-      return;
-    }
-    onComplete();
   }
 </script>
 
 <div class="onboarding-root">
-  <button type="button" class="onboarding-skip" onclick={onSkip}>
-    {t("onboarding.skip")}
-  </button>
   <div
     class="onboarding-progress"
     role="progressbar"
@@ -119,48 +103,25 @@
     {#if step === 1 && showInstallHint}
       <div class="onboarding-step-panel" in:fade={{ duration: reducedMotion ? 0 : 200 }}>
         <div class="onboarding-header-group">
+          <img class="onboarding-install-icon" src={appIcon} width="128" height="128" alt="" />
           <h1 class="onboarding-title">{t("onboarding.installTitle")}</h1>
           <p class="onboarding-subtitle">{t("onboarding.installSubtitle")}</p>
         </div>
 
-        <div class="onboarding-hero" aria-hidden="true">
-          <div class="onboarding-hero-row">
-            <div class="onboarding-icon-slot">
-              <img
-                class="onboarding-icon-img"
-                src={appIcon}
-                width="128"
-                height="128"
-                alt=""
-              />
-              <span class="onboarding-icon-label">ParseKit</span>
-            </div>
-
-            <div class="onboarding-arrow-col">
-              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path
-                  d="M12 5v12M12 17l-5-5M12 17l5-5"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                />
-              </svg>
-            </div>
-
-            <div class="onboarding-icon-slot">
-              <div class="onboarding-folder-icon">
-                <svg viewBox="0 0 96 96" fill="currentColor" aria-hidden="true">
-                  <path
-                    d="M12 24c0-4.4 3.6-8 8-8h18l8 8h38c4.4 0 8 3.6 8 8v40c0 4.4-3.6 8-8 8H20c-4.4 0-8-3.6-8-8V24z"
-                    opacity="0.9"
-                  />
-                </svg>
-              </div>
-              <span class="onboarding-icon-label">{t("onboarding.applications")}</span>
-            </div>
-          </div>
+        <div class="onboarding-actions">
+          <button
+            type="button"
+            class="onboarding-btn-primary onboarding-btn-install"
+            onclick={installParseKit}
+            disabled={installing}
+          >
+            {installing ? t("onboarding.installing") : t("onboarding.installButton")}
+          </button>
         </div>
+
+        {#if installError}
+          <p class="onboarding-helper onboarding-error" role="alert">{installError}</p>
+        {/if}
 
         <p class="onboarding-helper">{t("onboarding.installHelper")}</p>
 
@@ -186,36 +147,8 @@
           </div>
         </div>
         {#if gatekeeperCopyError}
-          <p class="onboarding-helper" role="alert">{gatekeeperCopyError}</p>
+          <p class="onboarding-helper onboarding-error" role="alert">{gatekeeperCopyError}</p>
         {/if}
-
-        <div class="onboarding-info-card">
-          <svg class="onboarding-info-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path
-              fill-rule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-              clip-rule="evenodd"
-            />
-          </svg>
-          <div>
-            <p class="onboarding-info-title">{t("onboarding.fileSupportTitle")}</p>
-            <p class="onboarding-info-body">{t("onboarding.fileSupportBody")}</p>
-          </div>
-        </div>
-
-        <div class="onboarding-actions">
-          <div class="onboarding-actions-row">
-            <button type="button" class="onboarding-btn-primary" onclick={continueInstall}>
-              {t("onboarding.continue")}
-            </button>
-            <button type="button" class="onboarding-btn-secondary" onclick={openApplications}>
-              {t("onboarding.openApplications")}
-            </button>
-          </div>
-          <button type="button" class="onboarding-link" onclick={learnMore}>
-            {t("onboarding.learnMore")}
-          </button>
-        </div>
       </div>
     {:else}
       <div class="onboarding-step-panel" in:fade={{ duration: reducedMotion ? 0 : 200 }}>

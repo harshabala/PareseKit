@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a styled ParseKit DMG (design backgrounds + locked icon coordinates).
+# Build a styled ParseKit DMG — frozen static background + Finder icon overlay.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -21,25 +21,9 @@ if [[ ! -x "$CREATE_DMG" ]]; then
 fi
 chmod +x "$VERIFY_DMG"
 
-# Procedural backgrounds match packaging/dmg/background.html layout contract.
-if [[ "${SKIP_DMG_BACKGROUND_GEN:-}" != "1" ]]; then
-  echo "Generating DMG backgrounds (720×460 contract)..."
-  (
-    cd "$ROOT/scripts/dmg"
-    swift GenerateBackground.swift
-    cp background.png background@2x.png "$DMG_ASSETS/"
-  )
-  sips -s dpiWidth 72 -s dpiHeight 72 "$BACKGROUND_1X" >/dev/null
-  sips -s dpiWidth 144 -s dpiHeight 144 "$BACKGROUND_2X" >/dev/null
-fi
-
-for f in "$BACKGROUND_1X" "$BACKGROUND_2X"; do
-  if [[ ! -f "$f" ]]; then
-    echo "error: missing design asset $f" >&2
-    exit 1
-  fi
-  echo "background asset OK: $f ($(stat -f%z "$f" 2>/dev/null || stat -c%s "$f") bytes)"
-done
+bg_dims() {
+  magick identify -format "%wx%h" "$1" 2>/dev/null || echo "missing"
+}
 
 validate_png() {
   local path="$1" expect_w="$2" expect_h="$3"
@@ -51,8 +35,39 @@ validate_png() {
     exit 1
   fi
 }
+
+# ── Static background only (default) ─────────────────────────────────────────
+# Artwork lives in packaging/dmg/assets/ and is never modified by this script.
+# Opt-in regeneration (emergency only): FORCE_DMG_BACKGROUND_REGEN=1
+if [[ "${FORCE_DMG_BACKGROUND_REGEN:-}" == "1" ]]; then
+  echo "warning: FORCE_DMG_BACKGROUND_REGEN=1 — regenerating backgrounds (not for release builds)" >&2
+  MASTER_BG="$DMG_ASSETS/background-master.png"
+  (
+    cd "$ROOT/scripts/dmg"
+    swift GenerateBackground.swift
+    cp background-master.png "$MASTER_BG"
+  )
+  magick "$MASTER_BG" -filter Lanczos -resize 1440x920! -strip PNG32:"$BACKGROUND_2X"
+  magick "$MASTER_BG" -filter Lanczos -resize 720x460! -strip PNG24:"$BACKGROUND_1X"
+  sips -s dpiWidth 72 -s dpiHeight 72 "$BACKGROUND_1X" >/dev/null
+  sips -s dpiWidth 144 -s dpiHeight 144 "$BACKGROUND_2X" >/dev/null
+else
+  echo "DMG background: static (no resize, no re-encode, no regeneration)"
+fi
+
+for f in "$BACKGROUND_1X" "$BACKGROUND_2X"; do
+  if [[ ! -f "$f" ]]; then
+    echo "error: missing frozen asset $f" >&2
+    exit 1
+  fi
+done
+
 validate_png "$BACKGROUND_1X" 720 460
 validate_png "$BACKGROUND_2X" 1440 920
+
+echo "  1× asset:  $BACKGROUND_1X ($(bg_dims "$BACKGROUND_1X")) $(stat -f%z "$BACKGROUND_1X" 2>/dev/null || stat -c%s "$BACKGROUND_1X") bytes"
+echo "  @2x asset: $BACKGROUND_2X ($(bg_dims "$BACKGROUND_2X")) $(stat -f%z "$BACKGROUND_2X" 2>/dev/null || stat -c%s "$BACKGROUND_2X") bytes"
+echo "  embed:     byte-copy via create-dmg.sh → .background/ (UDZO is lossless)"
 
 mkdir -p "$DMG_DIR"
 
@@ -64,18 +79,23 @@ ditto --norsrc "$STAGE_APP" "$DMG_STAGE/ParseKit.app"
 
 rm -f "$DMG_OUT"
 
-# Locked coordinate contract — create-dmg/AppleScript position = top-left.
-DMG_W=720
-DMG_H=460
-ICON_SIZE=128
-APP_ICON_X=126
-APP_ICON_Y=108
-APPS_LINK_X=466
-APPS_LINK_Y=108
+# Locked coordinate contract — single source: packaging/dmg/layout.json
+LAYOUT_JSON="$ROOT/packaging/dmg/layout.json"
+if [[ ! -f "$LAYOUT_JSON" ]]; then
+  echo "error: missing $LAYOUT_JSON" >&2
+  exit 1
+fi
+read_layout() {
+  node -p "const j=require('$LAYOUT_JSON'); $1"
+}
+DMG_W="$(read_layout 'j.window.width')"
+DMG_H="$(read_layout 'j.window.height')"
+ICON_SIZE="$(read_layout 'j.iconSize')"
+APP_ICON_X="$(read_layout 'j.parseKit.x')"
+APP_ICON_Y="$(read_layout 'j.parseKit.y')"
+APPS_LINK_X="$(read_layout 'j.applications.x')"
+APPS_LINK_Y="$(read_layout 'j.applications.y')"
 
-# Production volume title. For clean-account / Finder-plist cache busting during visual
-# tests, run: DMG_UNIQUE_VOLNAME=1 bash scripts/dmg/build-dmg.sh <ParseKit.app>
-# That yields e.g. ParseKit-test-20260703143052 (Finder caches layout by volume name).
 DMG_VOLNAME="${DMG_VOLNAME:-ParseKit}"
 if [[ "${DMG_UNIQUE_VOLNAME:-}" == "1" ]]; then
   DMG_VOLNAME="ParseKit-test-$(date +%Y%m%d%H%M%S)"
@@ -98,14 +118,13 @@ fi
 
 echo "Styled DMG: $DMG_OUT"
 echo "  volume name: ${DMG_VOLNAME}"
-echo "  backgrounds: $BACKGROUND_1X + $BACKGROUND_2X"
-echo "  window: ${DMG_W}×${DMG_H}  icon-size: ${ICON_SIZE}"
+echo "  window: ${DMG_W}×${DMG_H} (36:23)"
+echo "  backgrounds: static $BACKGROUND_1X + $BACKGROUND_2X"
+echo "  icon-size: ${ICON_SIZE}"
 echo "  ParseKit.app @ (${APP_ICON_X}, ${APP_ICON_Y})  Applications @ (${APPS_LINK_X}, ${APPS_LINK_Y})"
 
-# Mandatory layout verification on the compressed shipping artifact.
 "$VERIFY_DMG" "$DMG_OUT"
 
-# Fresh-mount simulation: copy to a new filename and verify again (no Finder cache).
 FRESH_COPY="$(mktemp /tmp/ParseKit-fresh-verify.XXXXXX.dmg)"
 cp "$DMG_OUT" "$FRESH_COPY"
 "$VERIFY_DMG" "$FRESH_COPY"
