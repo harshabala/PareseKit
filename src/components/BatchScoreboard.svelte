@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { fade } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import { prefersReducedMotion } from "svelte/motion";
   import { t } from "../lib/i18n.svelte";
-  import { hintFadeIn, hintFadeOut } from "../lib/motion";
+  import {
+    hintFadeOut,
+    MOTION_ENTER_MS,
+    MOTION_ENTER_Y,
+    easingDecelerate,
+  } from "../lib/motion";
   import {
     approximateChatGptMessages,
     formatTokenCount,
@@ -35,8 +40,17 @@
   } = $props();
 
   const reducedMotion = $derived(prefersReducedMotion.current);
-  const fadeIn = $derived(hintFadeIn(reducedMotion));
   const fadeOut = $derived(hintFadeOut(reducedMotion));
+  // Enter from current offset with ease-out — not scale(0); respects reduced motion
+  const enterTransition = $derived(
+    reducedMotion
+      ? { y: 0, duration: 0 }
+      : {
+          y: MOTION_ENTER_Y,
+          duration: MOTION_ENTER_MS,
+          easing: easingDecelerate,
+        },
+  );
 
   const batchTokens = $derived(batch.tokensSaved);
   const todayTokens = $derived(stats ? tokensSavedToday(stats) : 0);
@@ -45,26 +59,38 @@
   const chatApprox = $derived(approximateChatGptMessages(lifetimeTokens));
   const partialFail = $derived(failedCount > 0 && successCount > 0);
   const allFailed = $derived(failedCount > 0 && successCount === 0);
+  const tone = $derived(
+    allFailed ? "fail" : partialFail ? "warn" : "success",
+  );
 </script>
 
 <section
   class="batch-scoreboard"
+  class:tone-success={tone === "success"}
+  class:tone-warn={tone === "warn"}
+  class:tone-fail={tone === "fail"}
   aria-label={t("scoreboard.aria")}
-  in:fade={fadeIn}
+  in:fly={enterTransition}
   out:fade={fadeOut}
 >
-  <h2 class="batch-scoreboard-title">
-    {#if allFailed}
-      {t("scoreboard.titleFailed")}
-    {:else if partialFail}
-      {t("scoreboard.titlePartial")}
-    {:else}
-      {t("scoreboard.titleSuccess")}
-    {/if}
-  </h2>
+  <header class="batch-scoreboard-header">
+    <p class="batch-scoreboard-kicker">{t("scoreboard.kicker")}</p>
+    <h2 class="batch-scoreboard-title">
+      {#if allFailed}
+        {t("scoreboard.titleFailed")}
+      {:else if partialFail}
+        {t("scoreboard.titlePartial")}
+      {:else}
+        {t("scoreboard.titleSuccess")}
+      {/if}
+    </h2>
+  </header>
 
+  <!-- Hero: one number the eye lands on (achievement + purpose) -->
   <div class="batch-scoreboard-hero">
-    <span class="batch-scoreboard-hero-value">{formatTokenCount(batchTokens)}</span>
+    <span class="batch-scoreboard-hero-value" aria-live="polite">
+      {formatTokenCount(batchTokens)}
+    </span>
     <span class="batch-scoreboard-hero-label">{t("scoreboard.thisBatch")}</span>
     {#if batchTokens > 0}
       <p class="batch-scoreboard-hero-sub">
@@ -75,20 +101,21 @@
     {/if}
   </div>
 
+  <!-- Secondary metrics: grouped platter, not competing with hero -->
   <dl class="batch-scoreboard-stats">
-    <div>
+    <div class="batch-scoreboard-stat">
       <dt>{t("scoreboard.today")}</dt>
       <dd>{formatTokenCount(todayTokens)}</dd>
     </div>
-    <div>
+    <div class="batch-scoreboard-stat">
       <dt>{t("scoreboard.allTime")}</dt>
       <dd>{formatTokenCount(lifetimeTokens)}</dd>
     </div>
-    <div>
+    <div class="batch-scoreboard-stat">
       <dt>{t("scoreboard.filesAllTime")}</dt>
       <dd>{formatTokenCount(lifetimeFiles)}</dd>
     </div>
-    <div>
+    <div class="batch-scoreboard-stat">
       <dt>{t("scoreboard.successRate")}</dt>
       <dd title={t("scoreboard.successRateHint")}>{successRateLabel}</dd>
     </div>
@@ -103,9 +130,7 @@
     </p>
   {/if}
 
-  <p class="batch-scoreboard-method">{t("scoreboard.method")}</p>
-  <p class="batch-scoreboard-privacy">{t("scoreboard.privacy")}</p>
-
+  <!-- Primary path first; secondary one step down (simplicity) -->
   <div class="batch-scoreboard-actions">
     <button type="button" class="run-parse-btn" onclick={onOpenOutput}>
       {t("run.openOutput")}
@@ -119,117 +144,258 @@
     <div class="batch-scoreboard-dest" role="group" aria-label={t("scoreboard.destAria")}>
       <p class="batch-scoreboard-dest-title">{t("scoreboard.destTitle")}</p>
       <div class="batch-scoreboard-dest-btns">
-        <button type="button" class="secondary" onclick={() => onDestination("claude")}>
-          Claude
-        </button>
-        <button type="button" class="secondary" onclick={() => onDestination("chatgpt")}>
-          ChatGPT
-        </button>
-        <button type="button" class="secondary" onclick={() => onDestination("gemini")}>
-          Gemini
-        </button>
-        <button type="button" class="secondary" onclick={() => onDestination("obsidian")}>
-          Obsidian
-        </button>
-        <button type="button" class="secondary" onclick={() => onDestination("other")}>
+        {#each [
+          ["claude", "Claude"],
+          ["chatgpt", "ChatGPT"],
+          ["gemini", "Gemini"],
+          ["obsidian", "Obsidian"],
+        ] as [id, label]}
+          <button
+            type="button"
+            class="batch-scoreboard-chip"
+            onclick={() => onDestination(id as ConvertDestination)}
+          >
+            {label}
+          </button>
+        {/each}
+        <button
+          type="button"
+          class="batch-scoreboard-chip"
+          onclick={() => onDestination("other")}
+        >
           {t("scoreboard.destOther")}
         </button>
-        <button type="button" class="secondary" onclick={() => onDestination("skipped")}>
+        <button
+          type="button"
+          class="batch-scoreboard-chip batch-scoreboard-chip--quiet"
+          onclick={() => onDestination("skipped")}
+        >
           {t("scoreboard.destSkip")}
         </button>
       </div>
     </div>
   {/if}
 
-  {#if lifetimeTokens > 0}
-    <p class="batch-scoreboard-lifetime-note">
-      {t("tokenSavings.chatGptApprox", { count: formatTokenCount(chatApprox) })}
-      <span class="token-savings-approx-label">{t("tokenSavings.approximateLabel")}</span>
-    </p>
-  {/if}
+  <!-- Progressive disclosure: method + privacy not competing with the number -->
+  <details class="batch-scoreboard-details">
+    <summary>{t("scoreboard.aboutEstimate")}</summary>
+    <p class="batch-scoreboard-method">{t("scoreboard.method")}</p>
+    <p class="batch-scoreboard-privacy">{t("scoreboard.privacy")}</p>
+    {#if lifetimeTokens > 0}
+      <p class="batch-scoreboard-lifetime-note">
+        {t("tokenSavings.chatGptApprox", { count: formatTokenCount(chatApprox) })}
+        <span class="token-savings-approx-label">{t("tokenSavings.approximateLabel")}</span>
+      </p>
+    {/if}
+  </details>
 </section>
 
 <style>
   .batch-scoreboard {
     margin-top: 12px;
-    padding: 14px 14px 12px;
-    border-radius: var(--radius-md, 10px);
+    padding: 16px 14px 12px;
+    border-radius: 12px;
     border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
     background: var(--bg-elevated, var(--surface, #fff));
+    /* Subtle depth — floating result, not a flat form */
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset,
+      0 8px 24px rgba(0, 0, 0, 0.04);
+  }
+
+  .batch-scoreboard.tone-success {
+    border-color: color-mix(in srgb, var(--primary, #3a7a4a) 22%, var(--border, #ddd));
+  }
+  .batch-scoreboard.tone-warn {
+    border-color: color-mix(in srgb, #c9892a 28%, var(--border, #ddd));
+  }
+  .batch-scoreboard.tone-fail {
+    border-color: color-mix(in srgb, var(--destructive, #c44) 30%, var(--border, #ddd));
+  }
+
+  .batch-scoreboard-header {
+    margin-bottom: 10px;
+  }
+  .batch-scoreboard-kicker {
+    margin: 0 0 2px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    opacity: 0.55;
   }
   .batch-scoreboard-title {
-    margin: 0 0 10px;
-    font-size: 0.95rem;
+    margin: 0;
+    font-size: 1.05rem;
     font-weight: 600;
+    letter-spacing: -0.015em;
+    line-height: 1.2;
   }
+
   .batch-scoreboard-hero {
     text-align: center;
-    margin-bottom: 12px;
+    margin: 4px 0 14px;
+    padding: 8px 0 4px;
   }
   .batch-scoreboard-hero-value {
     display: block;
-    font-size: 1.85rem;
+    font-size: 2.1rem;
     font-weight: 650;
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.03em; /* large display: negative tracking */
+    line-height: 1.05;
   }
   .batch-scoreboard-hero-label {
     display: block;
-    font-size: 0.75rem;
-    opacity: 0.7;
-    margin-top: 2px;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    letter-spacing: 0.01em;
+    opacity: 0.62;
+    line-height: 1.3;
   }
   .batch-scoreboard-hero-sub {
     margin: 6px 0 0;
-    font-size: 0.75rem;
-    opacity: 0.75;
+    font-size: 0.72rem;
+    opacity: 0.7;
+    line-height: 1.35;
   }
+
   .batch-scoreboard-stats {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 12px;
-    margin: 0 0 10px;
+    gap: 6px;
+    margin: 0 0 12px;
+  }
+  .batch-scoreboard-stat {
+    padding: 8px 10px;
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--fg-base, #111) 4%, transparent);
   }
   .batch-scoreboard-stats dt {
-    font-size: 0.7rem;
-    opacity: 0.65;
+    font-size: 0.65rem;
+    letter-spacing: 0.02em;
+    opacity: 0.58;
     margin: 0;
+    line-height: 1.2;
   }
   .batch-scoreboard-stats dd {
-    margin: 2px 0 0;
+    margin: 3px 0 0;
     font-size: 0.95rem;
     font-weight: 600;
     font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
   }
-  .batch-scoreboard-method,
-  .batch-scoreboard-privacy,
-  .batch-scoreboard-fail-hint,
-  .batch-scoreboard-lifetime-note {
-    margin: 0 0 6px;
-    font-size: 0.7rem;
+
+  .batch-scoreboard-fail-hint {
+    margin: 0 0 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.72rem;
     line-height: 1.4;
-    opacity: 0.72;
+    background: color-mix(in srgb, #c9892a 12%, transparent);
   }
-  .batch-scoreboard-privacy {
-    margin-bottom: 10px;
+  .tone-fail .batch-scoreboard-fail-hint {
+    background: color-mix(in srgb, var(--destructive, #c44) 12%, transparent);
   }
+
   .batch-scoreboard-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
   }
+  /* Primary already gets global :active scale(0.97) — keep hierarchy clear */
+  .batch-scoreboard-actions .run-parse-btn {
+    flex: 1 1 auto;
+    min-width: 8rem;
+  }
+
   .batch-scoreboard-dest {
-    margin-top: 12px;
-    padding-top: 10px;
-    border-top: 1px solid var(--border, rgba(0, 0, 0, 0.06));
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid color-mix(in srgb, var(--fg-base, #111) 8%, transparent);
   }
   .batch-scoreboard-dest-title {
     margin: 0 0 8px;
-    font-size: 0.8rem;
+    font-size: 0.78rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    opacity: 0.85;
   }
   .batch-scoreboard-dest-btns {
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+  }
+  .batch-scoreboard-chip {
+    margin: 0;
+    padding: 5px 10px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--fg-base, #111) 12%, transparent);
+    background: transparent;
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    cursor: pointer;
+    transition:
+      transform 100ms ease-out,
+      background-color 120ms ease-out,
+      border-color 120ms ease-out;
+  }
+  .batch-scoreboard-chip:hover {
+    background: color-mix(in srgb, var(--fg-base, #111) 5%, transparent);
+  }
+  .batch-scoreboard-chip:active {
+    transform: scale(0.97); /* press feedback on pointer-down path */
+  }
+  .batch-scoreboard-chip--quiet {
+    opacity: 0.65;
+  }
+
+  .batch-scoreboard-details {
+    margin-top: 12px;
+    font-size: 0.7rem;
+    line-height: 1.4;
+    opacity: 0.72;
+  }
+  .batch-scoreboard-details summary {
+    cursor: pointer;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    list-style: none;
+    user-select: none;
+  }
+  .batch-scoreboard-details summary::-webkit-details-marker {
+    display: none;
+  }
+  .batch-scoreboard-details summary::before {
+    content: "› ";
+    display: inline-block;
+    transition: transform 120ms ease-out;
+  }
+  .batch-scoreboard-details[open] summary::before {
+    transform: rotate(90deg);
+  }
+  .batch-scoreboard-method,
+  .batch-scoreboard-privacy,
+  .batch-scoreboard-lifetime-note {
+    margin: 8px 0 0;
+  }
+  .batch-scoreboard-privacy {
+    opacity: 0.9;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .batch-scoreboard-chip,
+    .batch-scoreboard-details summary::before {
+      transition: none;
+    }
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .batch-scoreboard {
+      box-shadow: none;
+    }
+    .batch-scoreboard-stat {
+      background: var(--bg-elevated, #f4f4f4);
+    }
   }
 </style>
