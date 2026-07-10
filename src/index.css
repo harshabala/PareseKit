@@ -405,9 +405,8 @@ main {
   margin-top: 12px;
   padding: 14px 14px 12px;
   border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--primary, #3a7a4a) 18%, var(--border, rgba(0, 0, 0, 0.1)));
-  background: color-mix(in srgb, var(--primary, #3a7a4a) 6%, var(--bg-elevated, transparent));
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  border: 1px solid var(--border-color);
+  background: var(--secondary-bg);
 }
 .first-run-hero-title {
   margin: 0 0 6px;
@@ -415,25 +414,21 @@ main {
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.25;
+  color: var(--text-primary);
 }
-.first-run-hero-body,
-.first-run-hero-privacy {
+.first-run-hero-body {
   margin: 0;
   font-size: 0.75rem;
   line-height: 1.45;
-  letter-spacing: 0.005em;
-  opacity: 0.78;
+  color: var(--text-secondary);
+  max-width: 42ch;
 }
 .first-run-hero-privacy {
-  margin-top: 10px;
-  opacity: 0.58;
+  margin: 10px 0 0;
   font-size: 0.68rem;
-}
-@media (prefers-reduced-transparency: reduce) {
-  .first-run-hero {
-    background: var(--bg-elevated, #f6f6f6);
-    box-shadow: none;
-  }
+  line-height: 1.4;
+  color: var(--text-secondary);
+  opacity: 0.9;
 }
 
 .post-parse-actions {
@@ -667,7 +662,8 @@ label {
   padding: 8px 10px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--accent-color) 8%, var(--secondary-bg));
-  border-left: 3px solid var(--accent-color);
+  /* Full hairline only — no side-stripe accent (impeccable ban) */
+  border: 1px solid color-mix(in srgb, var(--accent-color) 22%, var(--border-color));
   min-width: 0;
 }
 

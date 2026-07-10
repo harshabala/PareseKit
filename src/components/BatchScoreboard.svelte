@@ -74,7 +74,6 @@
   out:fade={fadeOut}
 >
   <header class="batch-scoreboard-header">
-    <p class="batch-scoreboard-kicker">{t("scoreboard.kicker")}</p>
     <h2 class="batch-scoreboard-title">
       {#if allFailed}
         {t("scoreboard.titleFailed")}
@@ -195,33 +194,24 @@
     margin-top: 12px;
     padding: 16px 14px 12px;
     border-radius: 12px;
-    border: 1px solid var(--border, rgba(0, 0, 0, 0.08));
-    background: var(--bg-elevated, var(--surface, #fff));
-    /* Subtle depth — floating result, not a flat form */
-    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset,
-      0 8px 24px rgba(0, 0, 0, 0.04);
+    /* Border OR soft elevation — not both (ghost-card ban) */
+    border: 1px solid var(--border-color);
+    background: var(--glass-bg);
+    box-shadow: none;
   }
 
   .batch-scoreboard.tone-success {
-    border-color: color-mix(in srgb, var(--primary, #3a7a4a) 22%, var(--border, #ddd));
+    border-color: color-mix(in srgb, var(--status-success) 35%, var(--border-color));
   }
   .batch-scoreboard.tone-warn {
-    border-color: color-mix(in srgb, #c9892a 28%, var(--border, #ddd));
+    border-color: color-mix(in srgb, var(--status-warning) 40%, var(--border-color));
   }
   .batch-scoreboard.tone-fail {
-    border-color: color-mix(in srgb, var(--destructive, #c44) 30%, var(--border, #ddd));
+    border-color: color-mix(in srgb, var(--status-error) 40%, var(--border-color));
   }
 
   .batch-scoreboard-header {
     margin-bottom: 10px;
-  }
-  .batch-scoreboard-kicker {
-    margin: 0 0 2px;
-    font-size: 0.65rem;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    opacity: 0.55;
   }
   .batch-scoreboard-title {
     margin: 0;
@@ -229,6 +219,7 @@
     font-weight: 600;
     letter-spacing: -0.015em;
     line-height: 1.2;
+    font-family: var(--font-sans, system-ui, sans-serif);
   }
 
   .batch-scoreboard-hero {
@@ -240,22 +231,24 @@
     display: block;
     font-size: 2.1rem;
     font-weight: 650;
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
-    letter-spacing: -0.03em; /* large display: negative tracking */
+    letter-spacing: -0.03em;
     line-height: 1.05;
+    color: var(--text-primary);
   }
   .batch-scoreboard-hero-label {
     display: block;
     margin-top: 4px;
     font-size: 0.72rem;
     letter-spacing: 0.01em;
-    opacity: 0.62;
+    color: var(--text-secondary);
     line-height: 1.3;
   }
   .batch-scoreboard-hero-sub {
     margin: 6px 0 0;
     font-size: 0.72rem;
-    opacity: 0.7;
+    color: var(--text-secondary);
     line-height: 1.35;
   }
 
@@ -268,12 +261,12 @@
   .batch-scoreboard-stat {
     padding: 8px 10px;
     border-radius: 8px;
-    background: color-mix(in srgb, var(--fg-base, #111) 4%, transparent);
+    background: var(--secondary-bg, color-mix(in srgb, var(--text-color) 5%, transparent));
   }
   .batch-scoreboard-stats dt {
     font-size: 0.65rem;
     letter-spacing: 0.02em;
-    opacity: 0.58;
+    color: var(--text-secondary);
     margin: 0;
     line-height: 1.2;
   }
@@ -281,9 +274,11 @@
     margin: 3px 0 0;
     font-size: 0.95rem;
     font-weight: 600;
+    font-family: var(--font-mono);
     font-variant-numeric: tabular-nums;
     letter-spacing: -0.01em;
     line-height: 1.15;
+    color: var(--text-primary);
   }
 
   .batch-scoreboard-fail-hint {
@@ -292,10 +287,11 @@
     border-radius: 8px;
     font-size: 0.72rem;
     line-height: 1.4;
-    background: color-mix(in srgb, #c9892a 12%, transparent);
+    color: var(--text-primary);
+    background: color-mix(in srgb, var(--status-warning) 14%, var(--secondary-bg));
   }
   .tone-fail .batch-scoreboard-fail-hint {
-    background: color-mix(in srgb, var(--destructive, #c44) 12%, transparent);
+    background: color-mix(in srgb, var(--status-error) 12%, var(--secondary-bg));
   }
 
   .batch-scoreboard-actions {
@@ -312,7 +308,7 @@
   .batch-scoreboard-dest {
     margin-top: 14px;
     padding-top: 12px;
-    border-top: 1px solid color-mix(in srgb, var(--fg-base, #111) 8%, transparent);
+    border-top: 1px solid var(--border-color);
   }
   .batch-scoreboard-dest-title {
     margin: 0 0 8px;
@@ -328,21 +324,27 @@
   }
   .batch-scoreboard-chip {
     margin: 0;
-    padding: 5px 10px;
+    padding: 6px 12px;
+    min-height: 32px;
     border-radius: 999px;
-    border: 1px solid color-mix(in srgb, var(--fg-base, #111) 12%, transparent);
+    border: 1px solid var(--border-color);
     background: transparent;
+    color: var(--text-primary);
     font-size: 0.72rem;
     font-weight: 500;
     letter-spacing: -0.01em;
     cursor: pointer;
     transition:
-      transform 100ms ease-out,
-      background-color 120ms ease-out,
-      border-color 120ms ease-out;
+      transform 100ms var(--easing-decelerate, ease-out),
+      background-color 120ms var(--easing-standard, ease),
+      border-color 120ms var(--easing-standard, ease);
   }
   .batch-scoreboard-chip:hover {
-    background: color-mix(in srgb, var(--fg-base, #111) 5%, transparent);
+    background: var(--secondary-bg);
+  }
+  .batch-scoreboard-chip:focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
   .batch-scoreboard-chip:active {
     transform: scale(0.97); /* press feedback on pointer-down path */
