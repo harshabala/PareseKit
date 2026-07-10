@@ -46,7 +46,9 @@
     "stepOutput": "Pick where Markdown files are saved",
     "stepFiles": "Drop files or a folder in the menu bar panel",
     "stepRun": "Click Run Parse",
-    "trayHint": "The ParseKit menu bar icon (top-right) reopens the panel anytime."
+    "trayHint": "The ParseKit menu bar icon (top-right) reopens the panel anytime.",
+    "firstConvertTitle": "Next: convert one file",
+    "firstConvertBody": "After you continue, drop a PDF or Office file into ParseKit. You'll see an estimate of tokens saved — counted only on this Mac."
   },
   "deps": {
     "title": "File converters",
@@ -253,13 +255,40 @@
     "parseClipboard": "Parse Clipboard File → Copy Markdown",
     "quit": "Quit ParseKit"
   },
+  "firstRun": {
+    "title": "Convert one file to see your token savings",
+    "body": "Drop a PDF or Office file above (or pick files). ParseKit cleans it on your Mac and shows how many AI tokens you avoided. No account. Nothing is uploaded."
+  },
+  "scoreboard": {
+    "aria": "Conversion results and token savings",
+    "titleSuccess": "Conversion complete",
+    "titlePartial": "Conversion finished with some errors",
+    "titleFailed": "Conversion failed",
+    "thisBatch": "Tokens saved this batch (estimate)",
+    "chatApprox": "~{count} long ChatGPT messages of noise removed",
+    "today": "Today",
+    "allTime": "All time",
+    "filesAllTime": "Files converted",
+    "successRate": "Success (last jobs)",
+    "successRateHint": "Successful files vs failed among your last 20 jobs on this Mac",
+    "failHint": "{ok} succeeded · {fail} failed. Open the list above for details — retry the failed ones or try a different format.",
+    "method": "Estimate = tokens in a raw extract vs cleaned Markdown (roughly 4 characters per token). Different models tokenize differently — this is a guide, not a bill.",
+    "privacy": "Stored only on this device. Never uploaded.",
+    "convertMore": "Convert more",
+    "destAria": "Where will you use this?",
+    "destTitle": "Where will you use this? (optional, stays on this Mac)",
+    "destOther": "Other",
+    "destSkip": "Skip"
+  },
   "tokenSavings": {
+    "bannerToday": "{count} tokens saved today",
     "bannerMonth": "{count} tokens saved this month",
     "bannerLifetime": "{count} tokens saved",
     "bannerHint": "Open Settings for the full breakdown",
     "panelTitle": "Tokens saved",
     "panelHint": "Estimated tokens you avoided sending to AI by parsing locally. Scanned pages are tracked separately.",
     "periodLabel": "Banner period",
+    "periodToday": "Today",
     "periodMonth": "This month",
     "periodLifetime": "Lifetime",
     "periodHint": "Controls the quiet counter on the main panel.",
@@ -269,7 +298,7 @@
     "documentsUnlocked": "Scanned documents unlocked",
     "byTypeTitle": "By file type",
     "byTypeRow": "{type}: {tokens} tokens · {files} files",
-    "privacy": "Counted locally on your Mac. Never sent anywhere.",
+    "privacy": "Stored only on this device. Never uploaded.",
     "chatGptApprox": "~{count} long ChatGPT messages",
     "approximateLabel": "(approximate)",
     "reset": "Reset counter",
