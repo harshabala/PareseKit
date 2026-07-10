@@ -4,202 +4,151 @@
 
 <h1 align="center">ParseKit</h1>
 
-<h3 align="center">Turn documents into AI-ready Markdown</h3>
-
 <p align="center">
-  <a href="https://github.com/harshabala/parsekit/releases/latest/download/ParseKit_0.2.4_aarch64.dmg"><strong>Download for Mac (Apple Silicon)</strong></a>
+  <a href="https://github.com/harshabala/parsekit/releases/latest"><strong>Download for Mac</strong></a>
   &nbsp;·&nbsp;
   <a href="docs/INSTALL.md">Install guide</a>
 </p>
 
-ParseKit is a native macOS menu-bar app that converts PDFs, Office files, spreadsheets, and images into clean Markdown, plain text, or JSON — entirely on your Mac.
+---
 
-Raw PDFs and Office files carry layout noise, repeated headers/footers, and broken line wraps that inflate token count without adding meaning, and scanned pages aren't readable as text at all without OCR. ParseKit strips that noise locally, so more of a document's actual content fits into a single ChatGPT/Claude/Gemini context window — and teams ingesting documents in bulk (RAG pipelines, internal chat tools, batch summarization) can process more files before hitting a tokens-per-minute rate limit. It's noise removal, not compression — see the honest numbers below rather than a marketing claim.
+## Start here
 
-**Private · Batch · OCR · Offline · No API keys · No subscriptions**
+### What it is
 
-## How it works
+ParseKit is a small app that lives in your Mac menu bar. You give it PDFs, Word files, spreadsheets, slides, or images — it turns them into clean Markdown (or plain text / JSON) **on your computer**.
 
-```mermaid
-flowchart LR
-  subgraph input["① Your documents"]
-    PDF["PDF"]
-    OFF["Word · Excel · PowerPoint"]
-    IMG["Images · scans"]
-  end
+### What problem it solves
 
-  subgraph app["② ParseKit on your Mac"]
-    MB["Menu bar app"]
-    ENG["Parse engine\n(LiteParse v2)"]
-    MB --> ENG
-  end
+Raw documents are messy for AI tools. They include headers, footers, and layout noise that waste tokens, and scans aren’t readable as text without OCR. ParseKit cleans that up **locally**, so you paste more useful content into ChatGPT, Claude, Gemini, or your notes — and private files never get uploaded for conversion.
 
-  subgraph output["③ Output folder"]
-    MD[".md Markdown"]
-    TXT[".txt plain text"]
-    JSON[".json data"]
-  end
+### Install and first use (about 2 minutes)
 
-  subgraph use["④ Use anywhere"]
-    AI["ChatGPT · Claude · Gemini"]
-    NOTES["Obsidian · Notes"]
-  end
+1. Download the latest DMG from [Releases](https://github.com/harshabala/parsekit/releases/latest) (Apple Silicon, macOS 12+).
+2. Open the DMG → drag **ParseKit** into **Applications**.
+3. Open ParseKit from Applications. Look for the icon in the **menu bar** (top-right of the screen).
+4. If macOS blocks the app, run once in Terminal (or use the fix command in Settings):
 
-  PDF --> MB
-  OFF --> MB
-  IMG --> MB
-  ENG --> MD
-  ENG --> TXT
-  ENG --> JSON
-  MD --> AI
-  MD --> NOTES
-  TXT --> AI
-  JSON --> AI
-```
+   ```bash
+   xattr -cr /Applications/ParseKit.app
+   ```
 
-**In plain terms:**
+5. Click the menu bar icon → set an **output folder** if asked → **drop one PDF or Office file** → click convert.
+6. When it finishes, you’ll see **tokens saved this batch**, plus **today** and **all-time** totals. Open the output folder and paste the Markdown into your AI tool or notes.
 
-1. Click the ParseKit icon in your menu bar.
-2. Drop in a folder of PDFs, Office files, or images.
-3. ParseKit converts them on your Mac — nothing is uploaded.
-4. Open the output folder and paste the results into your AI tool or notes app.
+**Nothing is uploaded** for conversion. Counts stay on this Mac.
 
-<details>
-<summary><strong>What's happening under the hood?</strong></summary>
+### When something goes wrong
+
+| Situation | What to do |
+|-----------|------------|
+| Word/PowerPoint fails | Open **Settings → File Support** and install the listed helpers (e.g. LibreOffice). PDFs usually work without them. |
+| Scan looks empty | Turn **OCR** on in Settings and pick a language. |
+| Some files fail in a batch | The results panel shows success vs fail. Retry the failed ones or try another format. |
+| App won’t open | Run the `xattr` command above; details in [docs/INSTALL.md](docs/INSTALL.md). |
+| First launch feels unclear | Drop **one** file first — the token savings number is the “it worked” moment. |
+
+### Privacy (plain words)
+
+Your documents stay on your Mac. Token savings and success counts are stored only on this device. Optional: update checks and OCR language packs may use the network; conversion itself does not send your files to a server.
+
+---
+
+## For technical users
+
+### Architecture
 
 ```mermaid
 flowchart TB
-  subgraph mac["Your Mac — no cloud"]
-    UI["Menu bar UI"]
-    CORE["ParseKit app\nsettings · file picking"]
-    SIDE["parsekit-sidecar\nRust + LiteParse v2"]
-    UI <--> CORE
-    CORE <--> SIDE
-    SIDE --> OUT[".md / .txt / .json files"]
+  subgraph UI["Menu bar UI (Svelte 5 + Tauri 2)"]
+    POP["Popover App.svelte"]
+    ONB["Onboarding window"]
+    HUD["Progress HUD"]
   end
 
-  subgraph optional["Optional helpers on your Mac"]
-    LO["LibreOffice\nWord & PowerPoint"]
-    IM["ImageMagick\nimages"]
+  subgraph CORE["Tauri / Rust"]
+    IPC["Commands + events"]
+    STORE["settings.json + token_stats"]
+    TRAY["Tray + Finder actions"]
   end
 
-  SIDE -.-> LO
-  SIDE -.-> IM
+  subgraph ENGINE["parsekit-sidecar"]
+    LP["LiteParse v2"]
+    OCR["OCR / optional converters"]
+  end
 
-  NET(("Internet")) -. "update checks only" .-> CORE
-  NET -. "OCR language data\n(first use)" .-> SIDE
+  POP --> IPC
+  ONB --> IPC
+  HUD --> IPC
+  IPC --> STORE
+  IPC --> ENGINE
+  ENGINE --> OUT["Output folder\n.md / .txt / .json"]
+  LP --> OUT
+  OCR --> OUT
 ```
 
-Your files are read and written only on your machine. The only network calls are optional: checking for app updates, and downloading OCR language packs the first time you need them.
+### How conversion works
 
-</details>
+1. UI collects paths + options (format, OCR, workers).
+2. Sidecar streams events: `start` → `progress` → `token_savings` → `done` / `error`.
+3. Frontend records **local** token stats and job outcomes; shows a **batch scoreboard** (this batch / today / all-time / success rate).
+4. Files are written only under the user-chosen output directory.
+
+### Product metrics (local-first)
+
+| Metric | Definition | Storage |
+|--------|------------|---------|
+| **Activation** | `first_successful_convert_with_token_estimate` — first batch with ≥1 successful file | `activatedAt` in Tauri settings store |
+| **Tokens saved** | Estimate: raw extract vs cleaned Markdown (~4 chars/token) | On-disk token stats (Rust `token_stats`) |
+| **Today / all-time** | Calendar-day and lifetime sums of token events | Same |
+| **Success rate** | Successful vs failed files across last 20 jobs | `jobOutcomesV1` in settings store (counts only) |
+| **Destination (optional)** | Soft prompt after first success (Claude / ChatGPT / … / skip) | Local settings only |
+
+**Privacy line on every stats surface:** *Stored only on this device. Never uploaded.*
+
+See [`docs/TASKS.md`](docs/TASKS.md) for the PK-1…PK-5 checklist.
+
+### Dev install & tests
+
+```bash
+npm ci
+npm test
+npm run check
+npm run build
+# Full app (needs sidecar build tooling):
+npm run tauri:dev
+```
+
+CLI and agent skill: [AGENTS.md](AGENTS.md), [skills/parsekit/SKILL.md](skills/parsekit/SKILL.md).
+
+### Benchmarks & honesty
+
+Measured token comparisons: [`docs/benchmark-results.md`](docs/benchmark-results.md) via [`scripts/benchmark_tokens.py`](scripts/benchmark_tokens.py). Estimates are guides, not provider invoices.
 
 ---
 
-## Why it matters for AI workflows
+## More detail
 
-LLMs read text, not PDF layout. Naive extraction — copy-paste from Preview, raw `pdftotext`, dumping Office XML — carries formatting noise that costs tokens without adding meaning, and scanned pages need OCR before there's any text to read at all. ParseKit produces structured Markdown with page markers, and runs OCR on scans, so what you paste into an AI tool is closer to pure signal.
+### Finder Quick Actions
 
-**Measured, reproducible numbers:** [`docs/benchmark-results.md`](docs/benchmark-results.md) — generated by [`scripts/benchmark_tokens.py`](scripts/benchmark_tokens.py), which runs the real `parsekit` CLI against a set of fixture documents and compares token counts against a naive, no-cleanup extraction (what you'd get without ParseKit). Numbers aren't hand-edited into this README; run the script on your own documents to reproduce them.
+Right-click a supported file → **Quick Actions → Parse to Markdown with ParseKit**. Install from **Settings → General → Finder**.
 
-**Business framing:** if your team ingests documents into LLM workflows at any volume, lower tokens per document is a throughput argument, not just a cost one — it's the difference between how many files you can push through before a rate-limit window resets.
+### Features
 
-## How people actually use it
+- Local-first conversion (files never leave the Mac for parsing)
+- Menu bar native app (Tauri 2)
+- Markdown, plain text, or JSON
+- OCR for scans
+- Finder Quick Actions + Services
+- Global hotkey and clipboard helpers
+- `parsekit` CLI for agents and scripts
+- Local token savings + job success scoreboard
+- Optional floating progress HUD
 
-1. **Scanned contract into Claude/ChatGPT** — right-click the PDF → Quick Actions → Parse to Markdown with ParseKit → paste clean text into chat instead of uploading a scan the model struggles to read.
-2. **Consultant batch-prepping client docs** — drop a folder of Word files, PDFs, and decks into ParseKit, run once, feed the output folder into a Claude Project or RAG index.
-3. **Developer RAG pipeline** — add `parsekit convert ./inbox --batch --out ./markdown` as a preprocessing step. Offline, no third-party upload of sensitive documents.
-4. **AI coding agent mid-task** — before reading a PDF spec into context, run `parsekit convert spec.pdf --out /tmp/spec.md` and read the Markdown instead, preserving context budget for the actual task. See [skills/parsekit/SKILL.md](skills/parsekit/SKILL.md).
+### Privacy (summary)
 
----
+Conversion and OCR run locally. No conversion telemetry. Token and job counters are device-local. Optional network: app updates, OCR language data on first need.
 
-## Finder Quick Actions
+### License
 
-Right-click any supported file in Finder → **Quick Actions** → **Parse to Markdown with ParseKit**.
-
-- If you've set an output folder in ParseKit, files parse silently and you get a notification.
-- Otherwise ParseKit opens with the files loaded.
-- Also available in **System Settings → Keyboard → Keyboard Shortcuts → Services** (same Automator workflows).
-
-**Replace Original (opt-in):** a second action, **Parse to Markdown with ParseKit (Replace Original)**, moves the original to Trash after a *successful* parse only — always recoverable from Trash.
-
-Install both from **Settings → General → Finder**.
-
-## Settings
-
-| Tab | What it controls |
-| --- | --- |
-| **General** | Language, appearance, launch at login, Gatekeeper help, Finder actions, updates, global hotkey (⌃⇧M), token savings counter |
-| **File Support** | OCR language, OCR threads, **required converters** — LibreOffice for Word/PowerPoint, ImageMagick for images. PDF parsing works without these. |
-
-If a `.docx` fails to convert, open **Settings → File Support** — the converter checklist shows what's missing.
-
-**Token savings counter:** ParseKit tracks tokens saved locally (no telemetry) — a quiet line in the popover, full breakdown in Settings. Scanned pages get a separate **pages unlocked** stat rather than being folded into the token count.
-
-**First launch blocked?** Run once in Terminal:
-
-```bash
-xattr -cr /Applications/ParseKit.app
-```
-
-Or use **Settings → General → Copy fix command**, then open Privacy & Security.
-
----
-
-## Features
-
-- Local-first processing — files never leave your Mac
-- Native macOS menu-bar app
-- Markdown, plain text, or JSON export
-- OCR for scanned documents
-- Finder Quick Actions + macOS Services menu
-- Global hotkey (⌃⇧M) and clipboard-to-Markdown
-- `parsekit` CLI for scripts and agents
-- Local token savings counter, no telemetry
-- Optional floating progress HUD for background batches
-
-## Get ParseKit
-
-**You don't need `git clone`.** End users install the DMG:
-
-1. [Download the DMG](https://github.com/harshabala/parsekit/releases/latest/download/ParseKit_0.2.4_aarch64.dmg) (macOS 12+, Apple Silicon)
-2. Open it → drag **ParseKit** to **Applications**
-3. Open from Applications → look for the icon in your **menu bar** (top-right)
-
-First-launch security steps: [docs/INSTALL.md](docs/INSTALL.md)
-
-## Privacy
-
-Everything runs locally — files, OCR, and conversion never touch a server. No cloud processing, no telemetry, no tracking.
-
-## For AI coding agents
-
-ParseKit ships an agent skill at [skills/parsekit/SKILL.md](skills/parsekit/SKILL.md). Point your agent at [AGENTS.md](AGENTS.md) so it knows to run `parsekit convert` before reading PDFs or Office files into context.
-
-```bash
-parsekit convert /path/to/spec.pdf --out /tmp/spec.md
-```
-
-macOS Shortcuts / App Intents integration is planned for a later release.
-
-## For developers
-
-```bash
-git clone https://github.com/harshabala/parsekit.git
-cd parsekit
-npm install
-npm run build:sidecar
-npm run tauri dev
-```
-
-Release notes: [docs/RELEASING.md](docs/RELEASING.md)
-
-## Credits
-
-Created and crafted by [Harsha Balakrishnan](https://github.com/harshabala).
-
-Development help from Claude (Anthropic), Grok (xAI), and Gemini (Google) coding agents — see [docs/ACKNOWLEDGMENTS.md](docs/ACKNOWLEDGMENTS.md).
-
-Powered by [LiteParse v2](https://github.com/run-llama/liteparse) · [Tauri](https://tauri.app) · [Svelte](https://svelte.dev)
-
-Apache-2.0 — see [LICENSE](LICENSE)
+See [LICENSE](LICENSE) and [NOTICE.md](NOTICE.md).
