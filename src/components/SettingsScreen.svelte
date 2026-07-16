@@ -546,36 +546,50 @@
           id="settings-panel-file-support"
           role="tabpanel"
           aria-labelledby="settings-tab-file-support"
+          class="settings-file-support"
           in:fade={tabFadeInParams}
           out:fade={tabFadeOutParams}
         >
-          <div class="settings-section">
-            <div class="settings-section-title">{t("settings.ocrLanguageTitle")}</div>
-            <p class="settings-hint settings-hint--multiline">{t("settings.ocrLanguageHint")}</p>
-            <OcrLanguageSelector
-              value={ocrLanguage}
-              disabled={!ocrEnabled}
-              onChange={onOcrLanguageChange}
-            />
+          <div class="settings-card settings-ocr-card">
+            <div class="settings-section-title">{t("settings.ocrTitle")}</div>
+            <p class="settings-hint">{t("settings.ocrHint")}</p>
+
+            <div class="settings-inline-row">
+              <span class="settings-inline-label" id="ocr-lang-label"
+                >{t("settings.ocrLanguageLabel")}</span
+              >
+              <div class="settings-inline-control">
+                <OcrLanguageSelector
+                  value={ocrLanguage}
+                  disabled={!ocrEnabled}
+                  onChange={onOcrLanguageChange}
+                  compact
+                />
+              </div>
+            </div>
+
+            <div class="settings-card-divider" aria-hidden="true"></div>
+
+            <div class="settings-inline-row settings-inline-row--slider">
+              <span class="settings-inline-label" id="ocr-threads-label"
+                >{t("settings.workersLabel")}</span
+              >
+              <div class="settings-inline-control settings-inline-control--slider">
+                <WorkersSlider
+                  value={workers}
+                  label={t("settings.workersLabel")}
+                  onChange={onWorkersChange}
+                />
+              </div>
+            </div>
           </div>
 
-          <div class="settings-divider"></div>
+          <DependencyPreflight />
 
-          <div class="settings-section">
-            <div class="settings-section-title">{t("settings.workersTitle")}</div>
-            <p class="settings-hint">{t("settings.workersHint")}</p>
-            <WorkersSlider
-              value={workers}
-              label={t("settings.workersTitle")}
-              onChange={onWorkersChange}
-            />
-          </div>
-
-          <div class="settings-divider"></div>
-
-          <div class="settings-section">
-            <DependencyPreflight />
-          </div>
+          <button type="button" class="settings-link-card" onclick={onOpenAbout}>
+            <span class="settings-link-text">{t("settings.aboutTitle")}</span>
+            <span class="settings-link-chevron" aria-hidden="true">›</span>
+          </button>
         </div>
       {/if}
     {/key}

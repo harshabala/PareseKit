@@ -49,7 +49,7 @@
   },
   "deps": {
     "title": "文件转换工具",
-    "hint": "解析 PDF 无需额外工具。仅在解析 Office 或图片时需要安装下方转换器。",
+    "hint": "PDF 开箱即用。额外转换器用于 Office 与图片。",
     "checking": "正在检查…",
     "recheck": "重新检查",
     "missingNote": "缺少的工具仅影响对应文件类型，其他格式仍可解析。",
@@ -63,7 +63,14 @@
     "copyInstall": "复制安装命令",
     "copied": "已复制到剪贴板",
     "copyFailed": "无法复制到剪贴板，请重试。",
-    "getHomebrew": "获取 Homebrew"
+    "getHomebrew": "获取 Homebrew",
+    "available": "可用",
+    "libreofficeName": "LibreOffice",
+    "libreofficeDetail": "Word、PowerPoint",
+    "imagemagickName": "ImageMagick",
+    "imagemagickDetail": "PNG、JPG、SVG 等",
+    "tesseractName": "Tesseract OCR",
+    "tesseractDetail": "内置于 ParseKit"
   },
   "update": {
     "bannerAria": "有可用更新：版本 {version}",
@@ -209,7 +216,7 @@
     "appLanguageHint": "ParseKit 界面语言。导出文件内容不变。",
     "ocrLanguageTitle": "OCR 语言",
     "ocrLanguageHint": "选择扫描 PDF 和图片中使用的语言。\n仅在开启 OCR 时使用。",
-    "ocrLanguageLabel": "文档文字语言",
+    "ocrLanguageLabel": "语言",
     "appearanceTitle": "外观",
     "appearanceHint": "跟随系统或选择固定主题。",
     "workersTitle": "OCR 线程数",
@@ -239,7 +246,10 @@
     "finderInstallFailed": "无法安装 Finder 快速操作。",
     "moreSettings": "安装与高级选项",
     "aboutTitle": "关于 ParseKit",
-    "aboutSubtitle": "版本、致谢等。"
+    "aboutSubtitle": "版本、致谢等。",
+    "ocrTitle": "OCR",
+    "ocrHint": "用于扫描 PDF 和图片。",
+    "workersLabel": "每文件线程数"
   },
   "language": {
     "en": "English",

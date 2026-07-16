@@ -17,6 +17,14 @@
 
   const BREW_URL = "https://brew.sh";
 
+  /** Primary name + optional subtitle for converter rows (mockup layout). */
+  const DEP_COPY: Record<string, { nameKey: string; detailKey?: string }> = {
+    pdf: { nameKey: "deps.pdf" },
+    libreoffice: { nameKey: "deps.libreofficeName", detailKey: "deps.libreofficeDetail" },
+    imagemagick: { nameKey: "deps.imagemagickName", detailKey: "deps.imagemagickDetail" },
+    tesseract: { nameKey: "deps.tesseractName", detailKey: "deps.tesseractDetail" },
+  };
+
   const reducedMotion = $derived(prefersReducedMotion.current);
   const listSlide = $derived({
     duration: reducedMotion ? 0 : 200,
@@ -40,6 +48,15 @@
       delay: reducedMotion ? 0 : depsStaggerDelayMs(index),
       easing: easingDecelerate,
     };
+  }
+
+  function depName(id: string, fallbackKey: string): string {
+    return t(DEP_COPY[id]?.nameKey ?? fallbackKey);
+  }
+
+  function depDetail(id: string): string | null {
+    const key = DEP_COPY[id]?.detailKey;
+    return key ? t(key) : null;
   }
 
   onMount(() => {
@@ -111,9 +128,9 @@
   }
 </script>
 
-<div class="deps-preflight">
+<div class="deps-preflight settings-card">
   <div class="settings-section-header deps-preflight-header">
-    <span class="settings-section-title">{t("deps.title")}</span>
+    <span class="settings-section-title settings-section-title--caps">{t("deps.title")}</span>
     <button
       type="button"
       class="secondary deps-refresh-btn"
@@ -124,7 +141,7 @@
       {loading ? t("deps.checking") : t("deps.recheck")}
     </button>
   </div>
-  <p class="settings-hint">{t("deps.hint")}</p>
+  <p class="settings-hint deps-card-hint">{t("deps.hint")}</p>
 
   {#if loading && deps.length === 0}
     <p class="settings-hint deps-checking-line" transition:fade={{ duration: reducedMotion ? 0 : 120 }}>
@@ -172,7 +189,9 @@
               />
             </svg>
           </span>
-          <span class="deps-item-label">{t("deps.pdf")}</span>
+          <div class="deps-item-copy">
+            <span class="deps-item-label">{t("deps.pdf")}</span>
+          </div>
           <span class="deps-built-in-badge">{t("deps.builtIn")}</span>
         </div>
       </li>
@@ -183,7 +202,7 @@
           class:deps-item-installed={dep.installed}
           class:deps-item-missing={!dep.installed}
           aria-label={depRowAriaLabel(
-            t(dep.labelKey),
+            depName(dep.id, dep.labelKey),
             dep.installed,
             t("deps.statusInstalled"),
             t("deps.statusMissing")
@@ -221,9 +240,16 @@
                 </svg>
               {/if}
             </span>
-            <span class="deps-item-label">{t(dep.labelKey)}</span>
+            <div class="deps-item-copy">
+              <span class="deps-item-label">{depName(dep.id, dep.labelKey)}</span>
+              {#if depDetail(dep.id)}
+                <span class="deps-item-detail">{depDetail(dep.id)}</span>
+              {/if}
+            </div>
             {#if dep.installed && !dep.optional}
               <span class="deps-built-in-badge">{t("deps.builtIn")}</span>
+            {:else if dep.installed && dep.optional}
+              <span class="deps-available-badge">{t("deps.available")}</span>
             {/if}
           </div>
           {#if !dep.installed && dep.brewHint}
