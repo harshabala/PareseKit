@@ -92,7 +92,7 @@
     updateStatusOk?: boolean;
     onCheckForUpdates?: () => void;
     initialTab?: SettingsTab;
-    onClose: () => void;
+    onClose: (options?: { instant?: boolean }) => void;
   } = $props();
 
   const reducedMotion = $derived(prefersReducedMotion.current);
@@ -130,6 +130,7 @@
       generalPage = 0;
       return;
     }
+    // Back button: keep panel exit animation.
     onClose();
   }
 
@@ -149,7 +150,13 @@
       return;
     }
     if (e.key === "Escape") {
-      handleBack();
+      // Nested general page: step back without closing (non-instant).
+      if (activeTab === "general" && generalPage === 1) {
+        generalPage = 0;
+        return;
+      }
+      // Panel dismiss via Escape: instant chrome (matches App Escape path).
+      onClose({ instant: true });
     }
   }
 

@@ -10,12 +10,16 @@ import {
   MOTION_DEPS_POP_MS,
   MOTION_DEPS_STAGGER_DELAY_MS,
   MOTION_ENTER_MS,
+  MOTION_ENTER_Y,
   MOTION_EXIT_MS,
+  MOTION_EXIT_Y,
   MOTION_HINT_MS,
   MOTION_ROW_ENTER_MS,
   MOTION_ROW_STAGGER_DELAY_MS,
   MOTION_ROW_STAGGER_MAX,
   MOTION_STAGGER_BUDGET_MS,
+  panelBlurFlyInParams,
+  panelBlurFlyOutParams,
   rowFlyIn,
   sectionFlyInMaybeLight,
   sectionFlyOutMaybeLight,
@@ -73,6 +77,23 @@ describe("depsPopDelayMs", () => {
 });
 
 describe("keyboard / light motion helpers", () => {
+  it("forces instant panel out when instant is true (Escape chrome)", () => {
+    const instantOut = panelBlurFlyOutParams(false, { instant: true });
+    expect(instantOut.duration).toBe(0);
+    const animatedOut = panelBlurFlyOutParams(false, { instant: false });
+    expect(animatedOut.duration).toBe(MOTION_EXIT_MS);
+    // Instant out must not translate (sample css at u=1).
+    expect(instantOut.css(1, 1)).toContain("translateY(0px)");
+    expect(animatedOut.css(1, 1)).toContain(`translateY(${MOTION_EXIT_Y}px)`);
+
+    const instantIn = panelBlurFlyInParams(false, { instant: true });
+    expect(instantIn.duration).toBe(0);
+    expect(panelBlurFlyInParams(false).duration).toBe(MOTION_ENTER_MS);
+    expect(panelBlurFlyInParams(false).css(1, 1)).toContain(
+      `translateY(${MOTION_ENTER_Y}px)`,
+    );
+  });
+
   it("forces instant button fades when instant is true", () => {
     expect(buttonFadeInMaybeInstant(false, true).duration).toBe(0);
     expect(buttonFadeOutMaybeInstant(false, true).duration).toBe(0);

@@ -7,7 +7,11 @@
 
   const AUTHOR_URL = "https://github.com/harshabala";
 
-  let { onClose }: { onClose: () => void } = $props();
+  let {
+    onClose,
+  }: {
+    onClose: (options?: { instant?: boolean }) => void;
+  } = $props();
 
   let version = $state("0.2.0");
 
@@ -22,7 +26,8 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
-      onClose();
+      // Nested About subview: Escape steps back to Settings without animating the outer panel.
+      onClose({ instant: true });
     }
   }
 
@@ -45,7 +50,7 @@
   use:focusTrap={{ restoreFocus: false }}
 >
   <div class="settings-header">
-    <button type="button" class="settings-back-btn" onclick={onClose}>{t("about.back")}</button>
+    <button type="button" class="settings-back-btn" onclick={() => onClose()}>{t("about.back")}</button>
     <span class="settings-header-title" id="about-title">{t("about.title")}</span>
   </div>
 

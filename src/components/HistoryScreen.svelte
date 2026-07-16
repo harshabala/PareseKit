@@ -18,7 +18,7 @@
     onOpenFolder: (path: string) => void;
     onRerun: (batch: BatchResult) => void;
     appVersion?: string;
-    onClose: () => void;
+    onClose: (options?: { instant?: boolean }) => void;
   } = $props();
 
   const reducedMotion = $derived(prefersReducedMotion.current);
@@ -27,7 +27,7 @@
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "Escape") {
-      onClose();
+      onClose({ instant: true });
     }
   }
 </script>
@@ -42,7 +42,7 @@
   use:focusTrap={{ restoreFocus: false }}
 >
   <div class="settings-header">
-    <button type="button" class="settings-back-btn" onclick={onClose}>{t("history.back")}</button>
+    <button type="button" class="settings-back-btn" onclick={() => onClose()}>{t("history.back")}</button>
     <span class="settings-header-title" id="history-title">{t("history.title")}</span>
   </div>
 
@@ -54,7 +54,7 @@
         out:fade={hintFadeOutParams}
       >
         <p class="settings-hint">{t("history.empty")}</p>
-        <button type="button" class="secondary history-empty-action" onclick={onClose}>
+        <button type="button" class="secondary history-empty-action" onclick={() => onClose()}>
           {t("history.backToConvert")}
         </button>
       </div>

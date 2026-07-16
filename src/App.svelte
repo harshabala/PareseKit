@@ -142,7 +142,12 @@
   let hudActive = $state(false);
   /** Instant chrome for keyboard convert (Emil: keyboard-initiated = no animation). */
   let parseChromeInstant = $state(false);
-  /** Instant panel out when Escape closes settings/history/about. */
+  /**
+   * Instant panel out when Escape closes settings/history/about.
+   * Set only via closeSettings/closeHistory (and open*) from the call site:
+   * pass `{ instant: true }` for Escape; omit/false for Back so panel out still animates.
+   * Do not clear this flag in children after App Escape sets it — use the close helpers.
+   */
   let viewChromeInstant = $state(false);
   /** Focus restore target when Settings/History close. */
   let dialogReturnFocus: HTMLElement | null = null;
@@ -415,14 +420,14 @@
     showHistory = true;
   }
 
-  function closeHistory() {
-    viewChromeInstant = false;
+  function closeHistory(options?: { instant?: boolean }) {
+    viewChromeInstant = options?.instant === true;
     showHistory = false;
     restoreDialogReturnFocus();
   }
 
-  function closeSettings() {
-    viewChromeInstant = false;
+  function closeSettings(options?: { instant?: boolean }) {
+    viewChromeInstant = options?.instant === true;
     showAbout = false;
     showSettings = false;
     restoreDialogReturnFocus();
@@ -936,18 +941,14 @@
       }
     }
     if (e.key === "Escape") {
-      // Keyboard-initiated dismiss: no panel fly/blur (Emil frequency rule).
-      if (showAbout || showSettings || showHistory) {
-        viewChromeInstant = true;
-      }
+      // Keyboard-initiated dismiss: no panel fly (Emil frequency rule).
+      // Use close*({ instant: true }) so child Escape handlers cannot clear the flag.
       if (showAbout) {
         showAbout = false;
       } else if (showSettings) {
-        showSettings = false;
-        restoreDialogReturnFocus();
+        closeSettings({ instant: true });
       } else if (showHistory) {
-        showHistory = false;
-        restoreDialogReturnFocus();
+        closeHistory({ instant: true });
       }
     }
   }
