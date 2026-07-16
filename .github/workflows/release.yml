@@ -95,7 +95,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY_PATH: ${{ github.workspace }}/.tauri-ci/parsekit.key
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ""
-          RELEASE_NOTES: ${{ github.event.head_commit.message }}
+          # Prefer docs/releases/vX.Y.Z.md via scripts/release-notes.sh (do not dump commit subject).
         run: |
           mkdir -p .tauri-ci
           cp "$HOME/.tauri/parsekit.key" "$TAURI_SIGNING_PRIVATE_KEY_PATH"
