@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { fade, fly, slide } from "svelte/transition";
+  import { fade, fly } from "svelte/transition";
   import { prefersReducedMotion } from "svelte/motion";
   import { invoke } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
@@ -75,10 +75,10 @@
   import {
     bannerFlyIn,
     bannerFlyOut,
-    buttonFadeIn,
-    buttonFadeOut,
-    collapseSlideIn,
-    collapseSlideOut,
+    buttonFadeInMaybeInstant,
+    buttonFadeOutMaybeInstant,
+    collapseFadeIn,
+    collapseFadeOut,
     hintFadeIn,
     hintFadeOut,
     panelBlurFlyIn,
@@ -87,8 +87,8 @@
     panelBlurFlyOutParams,
     panelFadeIn,
     panelFadeOut,
-    sectionFlyIn,
-    sectionFlyOut,
+    sectionFlyInMaybeLight,
+    sectionFlyOutMaybeLight,
     subviewFadeOut,
   } from "./lib/motion";
   import "./index.css";
@@ -100,15 +100,12 @@
   const mainFadeOut = $derived(panelFadeOut(reducedMotion));
   const hintFadeInParams = $derived(hintFadeIn(reducedMotion));
   const hintFadeOutParams = $derived(hintFadeOut(reducedMotion));
-  const configSlideIn = $derived(collapseSlideIn(reducedMotion));
-  const configSlideOut = $derived(collapseSlideOut(reducedMotion));
+  const configFadeIn = $derived(collapseFadeIn(reducedMotion));
+  const configFadeOut = $derived(collapseFadeOut(reducedMotion));
   const subviewFadeOutParams = $derived(subviewFadeOut(reducedMotion));
+  const subviewFadeInParams = $derived(panelFadeIn(reducedMotion));
   const bannerFlyInParams = $derived(bannerFlyIn(reducedMotion));
   const bannerFlyOutParams = $derived(bannerFlyOut(reducedMotion));
-  const sectionFlyInParams = $derived(sectionFlyIn(reducedMotion));
-  const sectionFlyOutParams = $derived(sectionFlyOut(reducedMotion));
-  const buttonFadeInParams = $derived(buttonFadeIn(reducedMotion));
-  const buttonFadeOutParams = $derived(buttonFadeOut(reducedMotion));
 
   let inputDir = $state("");
   let selectedFiles = $state<string[]>([]);
@@ -145,6 +142,21 @@
   let showFloatingHud = $state(true);
   let isBackgroundBatch = $state(false);
   let hudActive = $state(false);
+  /** Instant chrome for keyboard convert (Emil: keyboard-initiated = no animation). */
+  let parseChromeInstant = $state(false);
+  const lightParseMotion = $derived(parseChromeInstant || isBackgroundBatch);
+  const sectionFlyInParams = $derived(
+    sectionFlyInMaybeLight(reducedMotion, lightParseMotion),
+  );
+  const sectionFlyOutParams = $derived(
+    sectionFlyOutMaybeLight(reducedMotion, lightParseMotion),
+  );
+  const buttonFadeInParams = $derived(
+    buttonFadeInMaybeInstant(reducedMotion, parseChromeInstant),
+  );
+  const buttonFadeOutParams = $derived(
+    buttonFadeOutMaybeInstant(reducedMotion, parseChromeInstant),
+  );
 
   $effect(() => {
     if (updateState.available) {
@@ -633,6 +645,7 @@
     noticeMsg = notice;
     void syncHudIfActive();
     isBackgroundBatch = false;
+    parseChromeInstant = false;
   }
 
   function cancelParse() {
@@ -641,9 +654,10 @@
     stopParseUi(t("errors.parseCancelled"));
   }
 
-  async function startParse() {
+  async function startParse(options?: { instantChrome?: boolean }) {
     if (!outputDir || inputFileCount === 0) return;
 
+    parseChromeInstant = options?.instantChrome === true;
     errorMsg = null;
 
     let filesToParse: string[];
@@ -862,7 +876,7 @@
     if ((e.metaKey || e.ctrlKey) && e.key === "r") {
       e.preventDefault();
       if (canRunParse) {
-        startParse();
+        void startParse({ instantChrome: true });
       }
     }
     if (e.key === "Escape") {
@@ -943,7 +957,7 @@
       {/if}
 
       {#if !configCollapsed}
-        <div class="card output-settings-card" in:slide={configSlideIn} out:slide={configSlideOut}>
+        <div class="card output-settings-card" in:fade={configFadeIn} out:fade={configFadeOut}>
           {#if !hasSuccessfulParse}
             <div class="output-settings-heading">
               <LinkIcon size={16} weight="regular" aria-hidden="true" />
@@ -974,8 +988,8 @@
           type="button"
           class="config-collapsed-summary"
           title={outputDir || t("config.downloads")}
-          in:slide={configSlideIn}
-          out:slide={configSlideOut}
+          in:fade={configFadeIn}
+          out:fade={configFadeOut}
           onclick={toggleConfigCollapsed}
         >
           <span class="config-summary-path"
@@ -1005,6 +1019,7 @@
           total={totalFiles || files.length}
           {isParsing}
           {lastParsingId}
+          lightMotion={lightParseMotion}
           onOpenFileSupport={openFileSupportSettings}
         />
       </div>
@@ -1022,7 +1037,7 @@
               type="button"
               class="run-parse-btn"
               disabled={!canRunParse}
-              onclick={startParse}
+              onclick={() => void startParse()}
             >
               {t("run.runParse")}
             </button>
@@ -1111,50 +1126,64 @@
 
   {#if showSettings}
     {#key "settings"}
-      <div class="motion-panel" in:panelBlurFlyIn={mainPanelIn} out:panelBlurFlyOut={mainPanelOut}>
+      <div
+        class="motion-panel motion-panel--settings"
+        in:panelBlurFlyIn={mainPanelIn}
+        out:panelBlurFlyOut={mainPanelOut}
+      >
         <div class="motion-panel-content">
     {#key showAbout}
-      <div class="subview-fill" out:fade={subviewFadeOutParams}>
+      <div class="subview-fill">
     {#if showAbout}
-      <div in:fade={mainFadeIn} out:fade={mainFadeOut}>
+      <div
+        class="subview-pane"
+        in:fade={subviewFadeInParams}
+        out:fade={subviewFadeOutParams}
+      >
       <AboutScreen onClose={() => (showAbout = false)} />
       </div>
     {:else}
-      <SettingsScreen
-        locale={getLocale()}
-        {ocrLanguage}
-        {ocrEnabled}
-        {theme}
-        {workers}
-        {launchAtLogin}
-        {autoConvertOnCopy}
-        {globalShortcut}
-        {showFloatingHud}
-        initialTab={settingsTab}
-        tokenStats={tokenStats}
-        tokenStatsPeriod={tokenStatsPeriod}
-        onLocaleChange={handleLocaleChange}
-        onOcrLanguageChange={handleOcrLanguageChange}
-        onThemeChange={handleThemeChange}
-        onWorkersChange={handleWorkersChange}
-        onLaunchAtLoginChange={handleLaunchAtLoginChange}
-        onAutoConvertOnCopyChange={handleAutoConvertOnCopyChange}
-        onGlobalShortcutChange={handleGlobalShortcutChange}
-        onShowFloatingHudChange={handleShowFloatingHudChange}
-        onTokenStatsPeriodChange={handleTokenStatsPeriodChange}
-        onTokenStatsChange={handleTokenStatsChange}
-        onOpenAbout={() => (showAbout = true)}
-        finderActionInstalled={finderActionState.installed}
-        finderActionBusy={finderActionState.busy}
-        finderActionNotice={finderActionState.notice}
-        onInstallFinderAction={() => finderActionState.install()}
-        {appVersion}
-        updateCheckBusy={updateState.checkBusy}
-        updateStatusNote={updateState.statusNote}
-        updateStatusOk={updateState.statusOk}
-        onCheckForUpdates={() => updateState.checkForUpdates(appVersion)}
-        onClose={() => (showSettings = false)}
-      />
+      <div
+        class="subview-pane"
+        in:fade={subviewFadeInParams}
+        out:fade={subviewFadeOutParams}
+      >
+        <SettingsScreen
+          locale={getLocale()}
+          {ocrLanguage}
+          {ocrEnabled}
+          {theme}
+          {workers}
+          {launchAtLogin}
+          {autoConvertOnCopy}
+          {globalShortcut}
+          {showFloatingHud}
+          initialTab={settingsTab}
+          tokenStats={tokenStats}
+          tokenStatsPeriod={tokenStatsPeriod}
+          onLocaleChange={handleLocaleChange}
+          onOcrLanguageChange={handleOcrLanguageChange}
+          onThemeChange={handleThemeChange}
+          onWorkersChange={handleWorkersChange}
+          onLaunchAtLoginChange={handleLaunchAtLoginChange}
+          onAutoConvertOnCopyChange={handleAutoConvertOnCopyChange}
+          onGlobalShortcutChange={handleGlobalShortcutChange}
+          onShowFloatingHudChange={handleShowFloatingHudChange}
+          onTokenStatsPeriodChange={handleTokenStatsPeriodChange}
+          onTokenStatsChange={handleTokenStatsChange}
+          onOpenAbout={() => (showAbout = true)}
+          finderActionInstalled={finderActionState.installed}
+          finderActionBusy={finderActionState.busy}
+          finderActionNotice={finderActionState.notice}
+          onInstallFinderAction={() => finderActionState.install()}
+          {appVersion}
+          updateCheckBusy={updateState.checkBusy}
+          updateStatusNote={updateState.statusNote}
+          updateStatusOk={updateState.statusOk}
+          onCheckForUpdates={() => updateState.checkForUpdates(appVersion)}
+          onClose={() => (showSettings = false)}
+        />
+      </div>
     {/if}
       </div>
     {/key}

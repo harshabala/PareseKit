@@ -245,17 +245,75 @@ export function hintFadeOut(prefersReduced: boolean) {
   };
 }
 
-/** Config card ↔ collapsed summary */
-export function collapseSlideIn(prefersReduced: boolean) {
+/**
+ * Config card ↔ collapsed summary.
+ * Fade only (no height slide) — avoids layout thrash in the menu-bar popover.
+ */
+export function collapseFadeIn(prefersReduced: boolean) {
   return {
     duration: prefersReduced ? 0 : MOTION_ENTER_MS,
     easing: easingDecelerate,
   };
 }
 
-export function collapseSlideOut(prefersReduced: boolean) {
+export function collapseFadeOut(prefersReduced: boolean) {
   return {
     duration: prefersReduced ? 0 : MOTION_EXIT_MS,
+    easing: easingAccelerate,
+  };
+}
+
+/** @deprecated Prefer collapseFadeIn — name kept for any external imports */
+export function collapseSlideIn(prefersReduced: boolean) {
+  return collapseFadeIn(prefersReduced);
+}
+
+/** @deprecated Prefer collapseFadeOut */
+export function collapseSlideOut(prefersReduced: boolean) {
+  return collapseFadeOut(prefersReduced);
+}
+
+/**
+ * Button / section fades that can be forced instant (keyboard path, background batches).
+ */
+export function buttonFadeInMaybeInstant(
+  prefersReduced: boolean,
+  instant: boolean
+) {
+  return {
+    duration: prefersReduced || instant ? 0 : MOTION_ENTER_MS,
+    easing: easingDecelerate,
+  };
+}
+
+export function buttonFadeOutMaybeInstant(
+  prefersReduced: boolean,
+  instant: boolean
+) {
+  return {
+    duration: prefersReduced || instant ? 0 : MOTION_EXIT_MS,
+    easing: easingAccelerate,
+  };
+}
+
+export function sectionFlyInMaybeLight(
+  prefersReduced: boolean,
+  light: boolean
+) {
+  return {
+    y: prefersReduced || light ? 0 : MOTION_ENTER_Y,
+    duration: prefersReduced ? 0 : light ? MOTION_HINT_MS : MOTION_ENTER_MS,
+    easing: easingDecelerate,
+  };
+}
+
+export function sectionFlyOutMaybeLight(
+  prefersReduced: boolean,
+  light: boolean
+) {
+  return {
+    y: prefersReduced || light ? 0 : MOTION_EXIT_Y,
+    duration: prefersReduced ? 0 : light ? MOTION_HINT_MS : MOTION_EXIT_MS,
     easing: easingAccelerate,
   };
 }

@@ -154,7 +154,9 @@ body[data-window="onboarding"] #app {
   border-radius: 50%;
   background: var(--onboarding-text-tertiary);
   opacity: 0.35;
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition:
+    opacity var(--timing-normal, 180ms) var(--easing-decelerate, cubic-bezier(0, 0, 0.2, 1)),
+    transform var(--timing-normal, 180ms) var(--easing-decelerate, cubic-bezier(0, 0, 0.2, 1));
 }
 
 .onboarding-progress-dot.active {
@@ -297,7 +299,7 @@ body[data-window="onboarding"] #app {
   border: 0.5px solid var(--onboarding-card-border);
   border-radius: var(--onboarding-radius-card);
   overflow: hidden;
-  animation: onboarding-fade-in 400ms ease 300ms both;
+  animation: onboarding-fade-in 300ms cubic-bezier(0, 0, 0.2, 1) 200ms both;
 }
 
 .onboarding-code-toolbar {
@@ -494,7 +496,9 @@ body[data-window="onboarding"] #app {
   min-height: 44px;
   min-width: 160px;
   cursor: pointer;
-  transition: background 150ms ease, transform 150ms ease;
+  transition:
+    background 150ms cubic-bezier(0.4, 0, 0.2, 1),
+    transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .onboarding-btn-primary:hover {
@@ -601,7 +605,10 @@ body[data-window="onboarding"] #app {
 @media (prefers-reduced-motion: reduce) {
   .onboarding-icon-img,
   .onboarding-arrow-col,
-  .onboarding-code-card {
-    animation: none;
+  .onboarding-folder-icon,
+  .onboarding-code-card,
+  .onboarding-step-panel {
+    animation: none !important;
+    transition: none !important;
   }
 }

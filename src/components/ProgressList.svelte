@@ -9,24 +9,13 @@
     hintFadeOut,
     rowFlyIn,
     rowFlyOut,
-    sectionFlyIn,
-    sectionFlyOut,
+    sectionFlyInMaybeLight,
+    sectionFlyOutMaybeLight,
     MOTION_ROW_STAGGER_CAP,
   } from "../lib/motion";
   import { isConverterDependencyError } from "../lib/converterErrors";
   import { resolvePrimaryParsingId } from "../lib/progress";
   import type { FileProgress } from "../lib/types";
-
-  const reducedMotion = $derived(prefersReducedMotion.current);
-  const iconFadeInParams = $derived(iconFadeIn(reducedMotion));
-  const iconFadeOutParams = $derived(iconFadeOut(reducedMotion));
-  const sectionFlyInParams = $derived(sectionFlyIn(reducedMotion));
-  const sectionFlyOutParams = $derived(sectionFlyOut(reducedMotion));
-  const hintFadeInParams = $derived(hintFadeIn(reducedMotion));
-  const hintFadeOutParams = $derived(hintFadeOut(reducedMotion));
-
-  let prevFileCount = $state(0);
-  let rowStaggerActive = $state(false);
 
   let {
     files,
@@ -34,13 +23,31 @@
     isParsing,
     lastParsingId = null,
     onOpenFileSupport,
+    /** Hotkey/background batches: skip fly-in Y, shorter duration (Emil). */
+    lightMotion = false,
   }: {
     files: FileProgress[];
     total: number;
     isParsing: boolean;
     lastParsingId?: string | null;
     onOpenFileSupport?: () => void;
+    lightMotion?: boolean;
   } = $props();
+
+  const reducedMotion = $derived(prefersReducedMotion.current);
+  const iconFadeInParams = $derived(iconFadeIn(reducedMotion));
+  const iconFadeOutParams = $derived(iconFadeOut(reducedMotion));
+  const sectionFlyInParams = $derived(
+    sectionFlyInMaybeLight(reducedMotion, lightMotion),
+  );
+  const sectionFlyOutParams = $derived(
+    sectionFlyOutMaybeLight(reducedMotion, lightMotion),
+  );
+  const hintFadeInParams = $derived(hintFadeIn(reducedMotion));
+  const hintFadeOutParams = $derived(hintFadeOut(reducedMotion));
+
+  let prevFileCount = $state(0);
+  let rowStaggerActive = $state(false);
 
   let listEl = $state<HTMLDivElement | null>(null);
   let userScrolledUntil = $state(0);
@@ -222,7 +229,7 @@
           class:file-row-active={file.status === "parsing"}
           class:file-row-error={file.status === "error"}
           class:file-row-done={file.status === "done"}
-          in:fly={rowFlyIn(reducedMotion, index, rowStaggerActive)}
+          in:fly={rowFlyIn(reducedMotion, index, rowStaggerActive && !lightMotion)}
           out:fly={rowFlyOut(reducedMotion)}
         >
           <div class="file-row-main">

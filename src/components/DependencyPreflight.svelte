@@ -232,8 +232,12 @@
             {/if}
           </div>
           {#if !dep.installed && dep.brewHint}
-            <div class="deps-install-block">
-              <code class="deps-brew-hint" transition:fade={{ duration: reducedMotion ? 0 : 150 }}>
+            <div
+              class="deps-install-block"
+              in:fade={{ duration: reducedMotion ? 0 : 150 }}
+              out:fade={{ duration: reducedMotion ? 0 : 120 }}
+            >
+              <code class="deps-brew-hint">
                 {dep.brewHint}
               </code>
               <div class="deps-install-actions">
