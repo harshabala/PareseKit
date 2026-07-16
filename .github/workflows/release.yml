@@ -108,7 +108,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/tauri.conf.json
+          git add package.json package-lock.json src-tauri/Cargo.toml src-tauri/tauri.conf.json README.md docs/INSTALL.md
           if git diff --cached --quiet; then
             echo "Version files already match v${VERSION}"
             exit 0
