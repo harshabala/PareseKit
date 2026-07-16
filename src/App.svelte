@@ -69,6 +69,9 @@
   import { warmDependencies } from "./lib/depsCache";
   import { DEFAULT_GLOBAL_SHORTCUT } from "./lib/globalShortcut";
   import { isConverterDependencyError, type SettingsTab } from "./lib/converterErrors";
+  import LinkIcon from "phosphor-svelte/lib/LinkIcon";
+  import FileTextIcon from "phosphor-svelte/lib/FileTextIcon";
+  import SparkleIcon from "phosphor-svelte/lib/SparkleIcon";
   import {
     bannerFlyIn,
     bannerFlyOut,
@@ -413,7 +416,9 @@
     }
 
     format = await getSetting<OutputFormat>("format", "md");
-    ocrEnabled = await getSetting("ocrEnabled", true);
+    // OCR is automatic for scans (main panel no longer exposes a toggle).
+    ocrEnabled = true;
+    await setSetting("ocrEnabled", true);
     const rawOcr = String(await getSetting("ocrLanguage", "eng"));
     if (!isKnownOcrLanguage(rawOcr)) {
       noticeMsg = t("settings.ocrMigrated");
@@ -570,9 +575,7 @@
     await setSetting("format", format);
   }
 
-  async function handleOcrEnabledChange() {
-    await setSetting("ocrEnabled", ocrEnabled);
-  }
+
 
   async function handleWorkersChange(value: number) {
     workers = value;
@@ -877,9 +880,11 @@
     {#key "main"}
       <div class="motion-panel" in:panelBlurFlyIn={mainPanelIn} out:panelBlurFlyOut={mainPanelOut}>
         <div class="motion-panel-content">
-  <header>
-    <span>{t("app.name")}</span>
-    {#if appVersion}<span class="header-ver">{appVersion}</span>{/if}
+  <header class="main-header">
+    <div class="main-header-brand">
+      <span class="main-header-title">{t("app.name")}</span>
+      {#if appVersion}<span class="header-ver">{appVersion}</span>{/if}
+    </div>
     <div class="header-actions">
       <button
         type="button"
@@ -916,11 +921,14 @@
     </div>
   {/if}
 
-  <main>
-    <div class="section">
-      <div class="section-title config-section-header">
-        <span>{t("config.title")}</span>
-        {#if hasSuccessfulParse}
+  <main class="main-panel">
+    <section class="section output-settings-section">
+      {#if hasSuccessfulParse}
+        <div class="config-section-header output-settings-toolbar">
+          <div class="output-settings-heading">
+            <LinkIcon size={16} weight="regular" aria-hidden="true" />
+            <span class="output-settings-title">{t("config.title")}</span>
+          </div>
           <button
             type="button"
             class="config-collapse-btn"
@@ -931,46 +939,35 @@
           >
             {configCollapsed ? t("config.expand") : t("config.collapse")}
           </button>
-        {/if}
-      </div>
+        </div>
+      {/if}
+
       {#if !configCollapsed}
-        <div class="card" in:slide={configSlideIn} out:slide={configSlideOut}>
+        <div class="card output-settings-card" in:slide={configSlideIn} out:slide={configSlideOut}>
+          {#if !hasSuccessfulParse}
+            <div class="output-settings-heading">
+              <LinkIcon size={16} weight="regular" aria-hidden="true" />
+              <span class="output-settings-title">{t("config.title")}</span>
+            </div>
+          {/if}
+
           <OutputFolderPicker value={outputDir} onSelect={handleOutputSelect} />
 
-          <div class="row">
-            <span>{t("config.format")}</span>
-            <FormatSelector value={format} onChange={handleFormatChange} />
-          </div>
-          {#if format !== "json"}
-            <div
-              class="file-count-preview caption-hint"
-              in:fade={hintFadeInParams}
-              out:fade={hintFadeOutParams}
-            >
-              {t("config.spreadsheetJsonHint")}
+          <div class="config-control-row">
+            <div class="config-control-label">
+              <FileTextIcon size={16} weight="regular" aria-hidden="true" />
+              <span>{t("config.format")}</span>
             </div>
-          {/if}
+            <div class="config-control-fields config-control-fields--format">
+              <FormatSelector value={format} onChange={handleFormatChange} />
+              <span class="ocr-auto-chip" title={t("config.ocrAutoHint")}>
+                <SparkleIcon size={12} weight="fill" aria-hidden="true" />
+                {t("config.ocrAuto")}
+              </span>
+            </div>
+          </div>
 
-          <div class="row ocr-row">
-            <div class="ocr-toggle">
-              <input
-                type="checkbox"
-                bind:checked={ocrEnabled}
-                id="ocr-toggle"
-                onchange={handleOcrEnabledChange}
-              />
-              <label for="ocr-toggle">{t("config.ocr")}</label>
-            </div>
-          </div>
-          {#if ocrEnabled}
-            <p
-              class="caption-hint ocr-workers-hint"
-              in:fade={hintFadeInParams}
-              out:fade={hintFadeOutParams}
-            >
-              {t("config.ocrWorkersHint")}
-            </p>
-          {/if}
+          <p class="caption-hint output-settings-hint">{t("config.formatHint")}</p>
         </div>
       {:else}
         <button
@@ -986,11 +983,11 @@
           >
           <span class="config-summary-chips">
             <span class="config-summary-chip">{format.toUpperCase()}</span>
-            {#if ocrEnabled}<span class="config-summary-chip">OCR</span>{/if}
+            <span class="config-summary-chip">OCR</span>
           </span>
         </button>
       {/if}
-    </div>
+    </section>
 
     <DropZone
       fileCount={inputFileCount}

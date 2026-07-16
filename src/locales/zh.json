@@ -8,16 +8,19 @@
     "quit": "退出 ParseKit"
   },
   "config": {
-    "title": "配置",
+    "title": "输出设置",
     "outputFolder": "输出文件夹",
     "change": "更改",
     "downloads": "下载",
-    "format": "格式",
+    "format": "导出格式",
     "spreadsheetJsonHint": "电子表格始终导出为 JSON。",
     "ocr": "OCR（内置）",
     "ocrWorkersHint": "扫描 PDF 占用更多 CPU。请在设置 → 文件支持中调整 OCR 线程数（大批量建议 1–2）。",
     "expand": "显示配置",
-    "collapse": "隐藏配置"
+    "collapse": "隐藏配置",
+    "formatHint": "电子表格导出为 JSON。扫描文件会自动运行 OCR。",
+    "ocrAuto": "扫描自动 OCR",
+    "ocrAutoHint": "内置 OCR 会在扫描 PDF 和图片上自动运行。可在设置 → 文件支持中调整语言与线程。"
   },
   "onboarding": {
     "title": "快速上手",
@@ -44,7 +47,7 @@
     "chooseOutput": "选择输出文件夹",
     "stepOutput": "选择 Markdown 保存位置",
     "stepFiles": "在菜单栏面板中拖放文件或文件夹",
-    "stepRun": "点击开始解析",
+    "stepRun": "点击「转换文件」",
     "trayHint": "随时点击菜单栏（右上角）的 ParseKit 图标可重新打开面板。"
   },
   "deps": {
@@ -96,16 +99,16 @@
   },
   "dropzone": {
     "title": "拖放文件或文件夹到此处",
-    "hint": "支持：.pdf、.csv、.xlsx、.xls、.tsv 等。",
-    "filesReadyOne": "1 个文件待解析",
-    "filesReady": "{count} 个文件待解析",
+    "hint": "PDF、CSV、XLSX、XLS、TSV 等",
+    "filesReadyOne": "1 个文件待转换",
+    "filesReady": "{count} 个文件待转换",
     "selectFiles": "选择文件",
     "selectFolder": "选择文件夹",
     "scanning": "正在扫描文件夹…"
   },
   "run": {
     "parsing": "解析中...",
-    "runParse": "开始解析",
+    "runParse": "转换文件",
     "cancel": "取消",
     "openOutput": "打开输出",
     "copyOutputPath": "复制输出路径",

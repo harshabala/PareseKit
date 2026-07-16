@@ -8,13 +8,16 @@
     "quit": "Quit ParseKit"
   },
   "config": {
-    "title": "Configuration",
-    "outputFolder": "Output Folder",
+    "title": "Output settings",
+    "outputFolder": "Output folder",
     "change": "Change",
     "downloads": "Downloads",
-    "format": "Format",
+    "format": "Export format",
     "spreadsheetJsonHint": "Spreadsheets always export as JSON.",
+    "formatHint": "Spreadsheets export as JSON. OCR runs automatically for scanned files.",
     "ocr": "OCR (built-in)",
+    "ocrAuto": "OCR auto for scans",
+    "ocrAutoHint": "Built-in OCR runs automatically on scanned PDFs and images. Adjust language and threads in Settings → File Support.",
     "ocrWorkersHint": "Scanned PDFs use more CPU. Adjust OCR threads in Settings → File Support (try 1–2 for large batches).",
     "expand": "Show configuration",
     "collapse": "Hide configuration"
@@ -45,7 +48,7 @@
     "chooseOutput": "Choose output folder",
     "stepOutput": "Pick where Markdown files are saved",
     "stepFiles": "Drop files or a folder in the menu bar panel",
-    "stepRun": "Click Run Parse",
+    "stepRun": "Click Convert Files",
     "trayHint": "The ParseKit menu bar icon (top-right) reopens the panel anytime."
   },
   "deps": {
@@ -97,17 +100,17 @@
     "openSettings": "Open Privacy & Security"
   },
   "dropzone": {
-    "title": "Drag & drop files or folders here",
-    "hint": "Supported: .pdf, .csv, .xlsx, .xls, .tsv and more.",
-    "filesReadyOne": "1 file ready to parse",
-    "filesReady": "{count} files ready to parse",
+    "title": "Drag files or folders here",
+    "hint": "PDF, CSV, XLSX, XLS, TSV and more",
+    "filesReadyOne": "1 file ready to convert",
+    "filesReady": "{count} files ready to convert",
     "selectFiles": "Select Files",
     "selectFolder": "Select Folder",
     "scanning": "Scanning folder…"
   },
   "run": {
     "parsing": "Parsing...",
-    "runParse": "Run Parse",
+    "runParse": "Convert Files",
     "cancel": "Cancel",
     "openOutput": "Open Output",
     "copyOutputPath": "Copy Output Path",

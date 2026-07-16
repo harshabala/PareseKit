@@ -6,7 +6,7 @@
 
   let { value, onSelect }: { value: string; onSelect: (path: string) => void } = $props();
 
-  const displayPath = $derived(value ? truncatePath(value, 40) : t("config.downloads"));
+  const displayPath = $derived(value ? truncatePath(value, 36) : t("config.downloads"));
 
   async function pick() {
     const selected = await pickOutputFolder();
@@ -16,19 +16,23 @@
   }
 </script>
 
-<div class="output-folder-row">
-  <div class="output-folder-label">
+<div class="config-control-row">
+  <div class="config-control-label">
     <FolderIcon size={16} weight="regular" aria-hidden="true" />
     <span>{t("config.outputFolder")}</span>
   </div>
-  <button
-    type="button"
-    class="output-folder-path-btn"
-    title={value || t("config.downloads")}
-    aria-label="{t('config.outputFolder')}: {value || t('config.downloads')}"
-    onclick={pick}
-  >
-    <span class="output-folder-path-text">{displayPath}</span>
-    <span class="output-folder-change-label">{t("config.change")}</span>
-  </button>
+  <div class="config-control-fields">
+    <button
+      type="button"
+      class="output-folder-path-field"
+      title={value || t("config.downloads")}
+      aria-label="{t('config.outputFolder')}: {value || t('config.downloads')}"
+      onclick={pick}
+    >
+      <span class="output-folder-path-text">{displayPath}</span>
+    </button>
+    <button type="button" class="secondary output-folder-change-btn" onclick={pick}>
+      {t("config.change")}
+    </button>
+  </div>
 </div>

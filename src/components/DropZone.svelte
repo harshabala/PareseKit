@@ -132,7 +132,7 @@
 
 <div class="drop-zone" class:drag-over={dragOver} class:drop-zone-busy={scanning || disabled}>
   <div class="drop-zone-icon" aria-hidden="true">
-    <FilePlusIcon size={40} weight="duotone" />
+    <FilePlusIcon size={32} weight="regular" />
   </div>
   <p class="drop-zone-title">{t("dropzone.title")}</p>
   {#key scanning}
@@ -148,7 +148,17 @@
     </p>
   {/if}
   <div class="drop-zone-actions">
-    <button type="button" disabled={disabled || scanning} onclick={selectFiles}>{t("dropzone.selectFiles")}</button>
-    <button type="button" class="secondary" disabled={disabled || scanning} onclick={selectFolder}>{t("dropzone.selectFolder")}</button>
+    <button
+      type="button"
+      class="drop-zone-btn-primary"
+      disabled={disabled || scanning}
+      onclick={selectFiles}>{t("dropzone.selectFiles")}</button
+    >
+    <button
+      type="button"
+      class="secondary drop-zone-btn-secondary"
+      disabled={disabled || scanning}
+      onclick={selectFolder}>{t("dropzone.selectFolder")}</button
+    >
   </div>
 </div>

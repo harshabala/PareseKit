@@ -8,16 +8,19 @@
     "quit": "Salir de ParseKit"
   },
   "config": {
-    "title": "Configuración",
+    "title": "Ajustes de salida",
     "outputFolder": "Carpeta de salida",
     "change": "Cambiar",
     "downloads": "Descargas",
-    "format": "Formato",
+    "format": "Formato de exportación",
     "spreadsheetJsonHint": "Las hojas de cálculo siempre se exportan como JSON.",
     "ocr": "OCR (integrado)",
     "ocrWorkersHint": "Los PDF escaneados usan más CPU. Ajusta los hilos OCR en Ajustes → Soporte de archivos (prueba 1–2 en lotes grandes).",
     "expand": "Mostrar configuración",
-    "collapse": "Ocultar configuración"
+    "collapse": "Ocultar configuración",
+    "formatHint": "Las hojas de cálculo se exportan como JSON. El OCR se ejecuta automáticamente en escaneos.",
+    "ocrAuto": "OCR auto en escaneos",
+    "ocrAutoHint": "El OCR integrado se ejecuta automáticamente en PDF e imágenes escaneadas. Ajusta idioma e hilos en Ajustes → Soporte de archivos."
   },
   "onboarding": {
     "title": "Primeros pasos",
@@ -44,7 +47,7 @@
     "chooseOutput": "Elegir carpeta de salida",
     "stepOutput": "Elige dónde se guardan los Markdown",
     "stepFiles": "Suelta archivos o una carpeta en el panel de la barra de menú",
-    "stepRun": "Pulsa Ejecutar análisis",
+    "stepRun": "Pulsa Convertir archivos",
     "trayHint": "El icono de ParseKit en la barra de menú (arriba a la derecha) vuelve a abrir el panel."
   },
   "deps": {
@@ -95,17 +98,17 @@
     "openSettings": "Abrir Privacidad y seguridad"
   },
   "dropzone": {
-    "title": "Arrastra y suelta archivos o carpetas aquí",
-    "hint": "Compatible: .pdf, .csv, .xlsx, .xls, .tsv y más.",
-    "filesReadyOne": "1 archivo listo para analizar",
-    "filesReady": "{count} archivos listos para analizar",
+    "title": "Arrastra archivos o carpetas aquí",
+    "hint": "PDF, CSV, XLSX, XLS, TSV y más",
+    "filesReadyOne": "1 archivo listo para convertir",
+    "filesReady": "{count} archivos listos para convertir",
     "selectFiles": "Seleccionar archivos",
     "selectFolder": "Seleccionar carpeta",
     "scanning": "Escaneando carpeta…"
   },
   "run": {
     "parsing": "Analizando...",
-    "runParse": "Ejecutar análisis",
+    "runParse": "Convertir archivos",
     "cancel": "Cancelar",
     "openOutput": "Abrir salida",
     "copyOutputPath": "Copiar ruta de salida",
