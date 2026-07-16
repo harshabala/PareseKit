@@ -1,15 +1,24 @@
 import { describe, expect, it } from "vitest";
 import {
+  buttonFadeInMaybeInstant,
+  buttonFadeOutMaybeInstant,
+  collapseFadeIn,
+  collapseFadeOut,
   depsPopDelayMs,
   depsStaggerDelayMs,
   MOTION_DEPS_ENTER_MS,
   MOTION_DEPS_POP_MS,
   MOTION_DEPS_STAGGER_DELAY_MS,
+  MOTION_ENTER_MS,
+  MOTION_EXIT_MS,
+  MOTION_HINT_MS,
   MOTION_ROW_ENTER_MS,
   MOTION_ROW_STAGGER_DELAY_MS,
   MOTION_ROW_STAGGER_MAX,
   MOTION_STAGGER_BUDGET_MS,
   rowFlyIn,
+  sectionFlyInMaybeLight,
+  sectionFlyOutMaybeLight,
 } from "./motion";
 
 describe("rowFlyIn stagger budget", () => {
@@ -60,5 +69,33 @@ describe("depsPopDelayMs", () => {
     expect(depsPopDelayMs(0)).toBe(0);
     expect(depsPopDelayMs(1)).toBe(MOTION_DEPS_STAGGER_DELAY_MS);
     expect(depsPopDelayMs(99)).toBe(depsPopDelayMs(2));
+  });
+});
+
+describe("keyboard / light motion helpers", () => {
+  it("forces instant button fades when instant is true", () => {
+    expect(buttonFadeInMaybeInstant(false, true).duration).toBe(0);
+    expect(buttonFadeOutMaybeInstant(false, true).duration).toBe(0);
+    expect(buttonFadeInMaybeInstant(false, false).duration).toBe(MOTION_ENTER_MS);
+    expect(buttonFadeOutMaybeInstant(false, false).duration).toBe(MOTION_EXIT_MS);
+  });
+
+  it("uses lighter section fly for background batches", () => {
+    const light = sectionFlyInMaybeLight(false, true);
+    const full = sectionFlyInMaybeLight(false, false);
+    expect(light.y).toBe(0);
+    expect(light.duration).toBe(MOTION_HINT_MS);
+    expect(full.y).toBeGreaterThan(0);
+    expect(full.duration).toBe(MOTION_ENTER_MS);
+    expect(sectionFlyOutMaybeLight(false, true).y).toBe(0);
+  });
+
+  it("config collapse is fade-only (no layout slide params)", () => {
+    const enter = collapseFadeIn(false);
+    const exit = collapseFadeOut(false);
+    expect(enter.duration).toBe(MOTION_ENTER_MS);
+    expect(exit.duration).toBe(MOTION_EXIT_MS);
+    expect(enter).not.toHaveProperty("y");
+    expect(collapseFadeIn(true).duration).toBe(0);
   });
 });
