@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/branding/app-icon.png" alt="ParseKit icon" width="96" height="96">
+  <img src="assets/branding/app-icon.png" alt="ParseKit icon" width="128" height="128">
 </p>
 
 <h1 align="center">ParseKit</h1>
