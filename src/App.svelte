@@ -1132,61 +1132,61 @@
         out:panelBlurFlyOut={mainPanelOut}
       >
         <div class="motion-panel-content">
-    {#key showAbout}
-      <div class="subview-fill">
-    {#if showAbout}
-      <div
-        class="subview-pane"
-        in:fade={subviewFadeInParams}
-        out:fade={subviewFadeOutParams}
-      >
-      <AboutScreen onClose={() => (showAbout = false)} />
-      </div>
-    {:else}
-      <div
-        class="subview-pane"
-        in:fade={subviewFadeInParams}
-        out:fade={subviewFadeOutParams}
-      >
-        <SettingsScreen
-          locale={getLocale()}
-          {ocrLanguage}
-          {ocrEnabled}
-          {theme}
-          {workers}
-          {launchAtLogin}
-          {autoConvertOnCopy}
-          {globalShortcut}
-          {showFloatingHud}
-          initialTab={settingsTab}
-          tokenStats={tokenStats}
-          tokenStatsPeriod={tokenStatsPeriod}
-          onLocaleChange={handleLocaleChange}
-          onOcrLanguageChange={handleOcrLanguageChange}
-          onThemeChange={handleThemeChange}
-          onWorkersChange={handleWorkersChange}
-          onLaunchAtLoginChange={handleLaunchAtLoginChange}
-          onAutoConvertOnCopyChange={handleAutoConvertOnCopyChange}
-          onGlobalShortcutChange={handleGlobalShortcutChange}
-          onShowFloatingHudChange={handleShowFloatingHudChange}
-          onTokenStatsPeriodChange={handleTokenStatsPeriodChange}
-          onTokenStatsChange={handleTokenStatsChange}
-          onOpenAbout={() => (showAbout = true)}
-          finderActionInstalled={finderActionState.installed}
-          finderActionBusy={finderActionState.busy}
-          finderActionNotice={finderActionState.notice}
-          onInstallFinderAction={() => finderActionState.install()}
-          {appVersion}
-          updateCheckBusy={updateState.checkBusy}
-          updateStatusNote={updateState.statusNote}
-          updateStatusOk={updateState.statusOk}
-          onCheckForUpdates={() => updateState.checkForUpdates(appVersion)}
-          onClose={() => (showSettings = false)}
-        />
-      </div>
-    {/if}
-      </div>
-    {/key}
+          {#key showAbout}
+            <div class="subview-fill">
+              {#if showAbout}
+                <div
+                  class="subview-pane"
+                  in:fade={subviewFadeInParams}
+                  out:fade={subviewFadeOutParams}
+                >
+                  <AboutScreen onClose={() => (showAbout = false)} />
+                </div>
+              {:else}
+                <div
+                  class="subview-pane"
+                  in:fade={subviewFadeInParams}
+                  out:fade={subviewFadeOutParams}
+                >
+                  <SettingsScreen
+                    locale={getLocale()}
+                    {ocrLanguage}
+                    {ocrEnabled}
+                    {theme}
+                    {workers}
+                    {launchAtLogin}
+                    {autoConvertOnCopy}
+                    {globalShortcut}
+                    {showFloatingHud}
+                    initialTab={settingsTab}
+                    tokenStats={tokenStats}
+                    tokenStatsPeriod={tokenStatsPeriod}
+                    onLocaleChange={handleLocaleChange}
+                    onOcrLanguageChange={handleOcrLanguageChange}
+                    onThemeChange={handleThemeChange}
+                    onWorkersChange={handleWorkersChange}
+                    onLaunchAtLoginChange={handleLaunchAtLoginChange}
+                    onAutoConvertOnCopyChange={handleAutoConvertOnCopyChange}
+                    onGlobalShortcutChange={handleGlobalShortcutChange}
+                    onShowFloatingHudChange={handleShowFloatingHudChange}
+                    onTokenStatsPeriodChange={handleTokenStatsPeriodChange}
+                    onTokenStatsChange={handleTokenStatsChange}
+                    onOpenAbout={() => (showAbout = true)}
+                    finderActionInstalled={finderActionState.installed}
+                    finderActionBusy={finderActionState.busy}
+                    finderActionNotice={finderActionState.notice}
+                    onInstallFinderAction={() => finderActionState.install()}
+                    {appVersion}
+                    updateCheckBusy={updateState.checkBusy}
+                    updateStatusNote={updateState.statusNote}
+                    updateStatusOk={updateState.statusOk}
+                    onCheckForUpdates={() => updateState.checkForUpdates(appVersion)}
+                    onClose={() => (showSettings = false)}
+                  />
+                </div>
+              {/if}
+            </div>
+          {/key}
         </div>
       </div>
     {/key}
