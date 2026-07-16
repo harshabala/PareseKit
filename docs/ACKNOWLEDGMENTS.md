@@ -17,6 +17,8 @@ This is a credit line in the docs, not a claim that any AI vendor ships or endor
 
 See [NOTICE.md](../NOTICE.md) for LiteParse, Tauri, Svelte, and bundled fonts.
 
+Settings section icons are monochrome stroke paths adapted from [Lucide Icons](https://lucide.dev) (ISC License).
+
 ## GitHub contributors graph
 
 GitHub may list **Claude** as a contributor because some commits include a `Co-Authored-By` trailer from Claude Code. That's a git convention, not an official Anthropic affiliation. Grok and Gemini don't add those trailers by default, so they won't appear in the contributors graph — this file is where they're credited instead.

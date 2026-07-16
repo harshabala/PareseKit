@@ -13,6 +13,7 @@
   import WorkersSlider from "./WorkersSlider.svelte";
   import DependencyPreflight from "./DependencyPreflight.svelte";
   import TokenSavingsPanel from "./TokenSavingsPanel.svelte";
+  import SettingsSectionIcon from "./SettingsSectionIcon.svelte";
   import { invoke } from "@tauri-apps/api/core";
   import type { TokenStats } from "../lib/tokenStats";
   import type { TokenStatsPeriod } from "../lib/store";
@@ -251,7 +252,7 @@
         >
           <div class="settings-section">
             <div class="settings-section-heading">
-              <span class="settings-section-icon" aria-hidden="true">🌐</span>
+              <SettingsSectionIcon name="globe" />
               <div class="settings-section-title">{t("settings.appLanguageTitle")}</div>
             </div>
             <p class="settings-hint">{t("settings.appLanguageHint")}</p>
@@ -262,7 +263,7 @@
 
           <div class="settings-section">
             <div class="settings-section-heading">
-              <span class="settings-section-icon" aria-hidden="true">🎨</span>
+              <SettingsSectionIcon name="palette" />
               <div class="settings-section-title">{t("settings.appearanceTitle")}</div>
             </div>
             <p class="settings-hint">{t("settings.appearanceHint")}</p>
@@ -273,7 +274,7 @@
 
           <div class="settings-section settings-group">
             <div class="settings-section-heading">
-              <span class="settings-section-icon" aria-hidden="true">🚀</span>
+              <SettingsSectionIcon name="power" />
               <div class="settings-section-title">{t("settings.startupTitle")}</div>
             </div>
 
@@ -338,7 +339,7 @@
 
             <div class="settings-section">
               <div class="settings-section-heading">
-                <span class="settings-section-icon" aria-hidden="true">⌨️</span>
+                <SettingsSectionIcon name="keyboard" />
                 <div class="settings-section-title">{t("settings.hotkeyTitle")}</div>
               </div>
               <p class="settings-hint">{t("settings.hotkeyHint")}</p>
@@ -380,7 +381,7 @@
             <div class="settings-divider"></div>
             <div class="settings-section">
               <div class="settings-section-heading">
-                <span class="settings-section-icon" aria-hidden="true">📊</span>
+                <SettingsSectionIcon name="chart" />
                 <div class="settings-section-title">{t("tokenSavings.panelTitle")}</div>
               </div>
               <TokenSavingsPanel
@@ -416,7 +417,7 @@
         >
           <div class="settings-section">
             <div class="settings-section-heading">
-              <span class="settings-section-icon" aria-hidden="true">🛡️</span>
+              <SettingsSectionIcon name="shield" />
               <div class="settings-section-title">{t("gatekeeper.title")}</div>
             </div>
             <p class="settings-hint">{t("gatekeeper.hint")}</p>
@@ -452,7 +453,7 @@
 
           <div class="settings-section">
             <div class="settings-section-heading">
-              <span class="settings-section-icon" aria-hidden="true">📁</span>
+              <SettingsSectionIcon name="folder" />
               <div class="settings-section-title">{t("settings.finderTitle")}</div>
             </div>
             <p class="settings-hint">{t("settings.finderHint")}</p>
@@ -500,7 +501,7 @@
 
           <div class="settings-section">
             <div class="settings-section-heading">
-              <span class="settings-section-icon" aria-hidden="true">↓</span>
+              <SettingsSectionIcon name="download" />
               <div class="settings-section-title">{t("update.settingsTitle")}</div>
             </div>
             <p class="settings-hint">{t("update.settingsHint")}</p>
@@ -532,7 +533,7 @@
             <button type="button" class="settings-link-card" onclick={onOpenAbout}>
               <span class="settings-link-text">
                 <span class="settings-link-with-icon">
-                  <span class="settings-section-icon" aria-hidden="true">ℹ️</span>
+                  <SettingsSectionIcon name="info" />
                   {t("settings.aboutTitle")}
                 </span>
                 <span class="settings-about-meta-inline">{t("settings.aboutSubtitle")}</span>
