@@ -191,18 +191,20 @@
   "history": {
     "title": "History",
     "back": "Back",
-    "empty": "No batches yet. Run a parse to see history here.",
+    "empty": "No batches yet. Convert files to see history here.",
+    "backToConvert": "Back to convert",
     "hint": "Last {count} batches (newest first).",
     "rerun": "Re-run",
     "success": "{count} files parsed successfully",
     "successOne": "1 file parsed successfully",
     "copyErrors": "Copy errors",
-    "errorsCopied": "Copied!",
+    "errorsCopied": "Copied",
     "copyConfirm": "Error report copied to clipboard — paste it when reporting issues.",
     "copyFailed": "Could not copy to clipboard."
   },
   "errors": {
-    "addFiles": "Add files or a folder to parse.",
+    "addFiles": "Add files or a folder to convert.",
+    "needOutputFolder": "Choose an output folder first.",
     "noSupported": "No supported files found.",
     "parseFailed": "Parsing failed.",
     "parseCancelled": "Parsing cancelled.",

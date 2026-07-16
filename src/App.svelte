@@ -94,8 +94,6 @@
   import "./index.css";
 
   const reducedMotion = $derived(prefersReducedMotion.current);
-  const mainPanelIn = $derived(panelBlurFlyInParams(reducedMotion));
-  const mainPanelOut = $derived(panelBlurFlyOutParams(reducedMotion));
   const mainFadeIn = $derived(panelFadeIn(reducedMotion));
   const mainFadeOut = $derived(panelFadeOut(reducedMotion));
   const hintFadeInParams = $derived(hintFadeIn(reducedMotion));
@@ -144,7 +142,39 @@
   let hudActive = $state(false);
   /** Instant chrome for keyboard convert (Emil: keyboard-initiated = no animation). */
   let parseChromeInstant = $state(false);
+  /** Instant panel out when Escape closes settings/history/about. */
+  let viewChromeInstant = $state(false);
+  /** Focus restore target when Settings/History close. */
+  let dialogReturnFocus: HTMLElement | null = null;
+
+  function captureDialogReturnFocus() {
+    const el = document.activeElement;
+    dialogReturnFocus = el instanceof HTMLElement ? el : null;
+  }
+
+  function restoreDialogReturnFocus() {
+    const el = dialogReturnFocus;
+    dialogReturnFocus = null;
+    if (el && document.contains(el) && typeof el.focus === "function") {
+      requestAnimationFrame(() => el.focus({ preventScroll: true }));
+    }
+  }
   const lightParseMotion = $derived(parseChromeInstant || isBackgroundBatch);
+  const mainPanelIn = $derived(
+    panelBlurFlyInParams(reducedMotion, { instant: false }),
+  );
+  const mainPanelOut = $derived(
+    panelBlurFlyOutParams(reducedMotion, { instant: viewChromeInstant }),
+  );
+  const settingsPanelIn = $derived(
+    panelBlurFlyInParams(reducedMotion, {
+      instant: viewChromeInstant,
+      originScale: true,
+    }),
+  );
+  const settingsPanelOut = $derived(
+    panelBlurFlyOutParams(reducedMotion, { instant: viewChromeInstant }),
+  );
   const sectionFlyInParams = $derived(
     sectionFlyInMaybeLight(reducedMotion, lightParseMotion),
   );
@@ -187,6 +217,14 @@
       inputFileCount !== null &&
       inputFileCount > 0
   );
+  /** Why Convert is disabled — shown under the CTA (Emil: disabled must explain itself). */
+  let canRunParseBlockedReason = $derived.by(() => {
+    if (isParsing) return null;
+    if (isIngesting) return t("dropzone.scanning");
+    if (!outputDir) return t("errors.needOutputFolder");
+    if (inputFileCount === null || inputFileCount <= 0) return t("errors.addFiles");
+    return null;
+  });
 
 
   async function resolveDefaultWorkers(savedWorkers: number) {
@@ -232,6 +270,8 @@
   }
 
   function openSettings(tab: SettingsTab = "general") {
+    viewChromeInstant = false;
+    if (!showSettings) captureDialogReturnFocus();
     settingsTab = tab;
     showHistory = false;
     showAbout = false;
@@ -368,8 +408,24 @@
   }
 
   function openHistory() {
+    viewChromeInstant = false;
+    if (!showHistory) captureDialogReturnFocus();
     showSettings = false;
+    showAbout = false;
     showHistory = true;
+  }
+
+  function closeHistory() {
+    viewChromeInstant = false;
+    showHistory = false;
+    restoreDialogReturnFocus();
+  }
+
+  function closeSettings() {
+    viewChromeInstant = false;
+    showAbout = false;
+    showSettings = false;
+    restoreDialogReturnFocus();
   }
 
   async function rerunBatch(batch: BatchResult) {
@@ -880,9 +936,19 @@
       }
     }
     if (e.key === "Escape") {
-      if (showAbout) showAbout = false;
-      else if (showSettings) showSettings = false;
-      else if (showHistory) showHistory = false;
+      // Keyboard-initiated dismiss: no panel fly/blur (Emil frequency rule).
+      if (showAbout || showSettings || showHistory) {
+        viewChromeInstant = true;
+      }
+      if (showAbout) {
+        showAbout = false;
+      } else if (showSettings) {
+        showSettings = false;
+        restoreDialogReturnFocus();
+      } else if (showHistory) {
+        showHistory = false;
+        restoreDialogReturnFocus();
+      }
     }
   }
 </script>
@@ -1044,6 +1110,9 @@
           {/if}
         </div>
       {/key}
+      {#if canRunParseBlockedReason}
+        <p class="run-blocked-hint" role="status">{canRunParseBlockedReason}</p>
+      {/if}
       {#if noticeMsg}
         <div
           class="notice-banner"
@@ -1117,7 +1186,7 @@
             onOpenFolder={openFolder}
             onRerun={rerunBatch}
             {appVersion}
-            onClose={() => (showHistory = false)}
+            onClose={closeHistory}
           />
         </div>
       </div>
@@ -1128,8 +1197,8 @@
     {#key "settings"}
       <div
         class="motion-panel motion-panel--settings"
-        in:panelBlurFlyIn={mainPanelIn}
-        out:panelBlurFlyOut={mainPanelOut}
+        in:panelBlurFlyIn={settingsPanelIn}
+        out:panelBlurFlyOut={settingsPanelOut}
       >
         <div class="motion-panel-content">
           {#key showAbout}
@@ -1181,7 +1250,7 @@
                     updateStatusNote={updateState.statusNote}
                     updateStatusOk={updateState.statusOk}
                     onCheckForUpdates={() => updateState.checkForUpdates(appVersion)}
-                    onClose={() => (showSettings = false)}
+                    onClose={closeSettings}
                   />
                 </div>
               {/if}

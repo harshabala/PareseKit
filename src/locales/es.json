@@ -190,6 +190,7 @@
     "title": "Historial",
     "back": "Atrás",
     "empty": "Aún no hay lotes. Ejecuta un análisis para ver el historial.",
+    "backToConvert": "Volver a convertir",
     "hint": "Últimos {count} lotes (más recientes primero).",
     "rerun": "Repetir",
     "success": "{count} archivos analizados correctamente",
@@ -201,6 +202,7 @@
   },
   "errors": {
     "addFiles": "Añade archivos o una carpeta para analizar.",
+    "needOutputFolder": "Elige primero una carpeta de salida.",
     "noSupported": "No se encontraron archivos compatibles.",
     "parseFailed": "Error al analizar.",
     "parseCancelled": "Análisis cancelado.",

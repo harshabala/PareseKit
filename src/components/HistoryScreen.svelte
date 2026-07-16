@@ -2,6 +2,7 @@
   import { fade } from "svelte/transition";
   import { prefersReducedMotion } from "svelte/motion";
   import { t } from "../lib/i18n.svelte";
+  import { focusTrap } from "../lib/focusTrap";
   import { hintFadeIn, hintFadeOut } from "../lib/motion";
   import type { BatchResult } from "../lib/types";
   import BatchHistoryList from "./BatchHistoryList.svelte";
@@ -33,7 +34,13 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="settings-screen" role="dialog" aria-modal="true" aria-labelledby="history-title">
+<div
+  class="settings-screen"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="history-title"
+  use:focusTrap={{ restoreFocus: false }}
+>
   <div class="settings-header">
     <button type="button" class="settings-back-btn" onclick={onClose}>{t("history.back")}</button>
     <span class="settings-header-title" id="history-title">{t("history.title")}</span>
@@ -41,9 +48,16 @@
 
   <div class="settings-scroll">
     {#if batches.length === 0}
-      <p class="settings-hint" in:fade={hintFadeInParams} out:fade={hintFadeOutParams}>
-        {t("history.empty")}
-      </p>
+      <div
+        class="history-empty"
+        in:fade={hintFadeInParams}
+        out:fade={hintFadeOutParams}
+      >
+        <p class="settings-hint">{t("history.empty")}</p>
+        <button type="button" class="secondary history-empty-action" onclick={onClose}>
+          {t("history.backToConvert")}
+        </button>
+      </div>
     {:else}
       <div in:fade={hintFadeInParams} out:fade={hintFadeOutParams}>
         <p class="settings-hint">{t("history.hint", { count: batches.length })}</p>

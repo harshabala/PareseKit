@@ -144,7 +144,15 @@
   <div class="section-title">{t("progress.title")}</div>
   <div class="progress-panel">
     <div class="row progress-header">
-      <span class="progress-heading">{isParsing ? t("progress.parsing") : t("progress.complete")}</span>
+      {#key isParsing}
+        <span
+          class="progress-heading"
+          in:fade={iconFadeInParams}
+          out:fade={iconFadeOutParams}
+        >
+          {isParsing ? t("progress.parsing") : t("progress.complete")}
+        </span>
+      {/key}
       <span class="progress-fraction" aria-live="polite">
         {t("progress.ofTotal", { done: finishedCount, total })}
       </span>
@@ -235,11 +243,18 @@
           <div class="file-row-main">
             <span class="file-name" title={file.name}>{file.name}</span>
             {#if file.status === "error" && file.error}
-              <span class="file-error" title={file.error}>{file.error}</span>
+              <span
+                class="file-error"
+                title={file.error}
+                in:fade={hintFadeInParams}
+                out:fade={hintFadeOutParams}
+              >{file.error}</span>
               {#if onOpenFileSupport && isConverterDependencyError(file.error)}
                 <button
                   type="button"
                   class="file-error-link"
+                  in:fade={hintFadeInParams}
+                  out:fade={hintFadeOutParams}
                   onclick={onOpenFileSupport}
                 >
                   {t("errors.openFileSupport")}

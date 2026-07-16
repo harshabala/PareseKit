@@ -190,6 +190,7 @@
     "title": "历史",
     "back": "返回",
     "empty": "暂无批次。运行解析后会显示在这里。",
+    "backToConvert": "返回转换",
     "hint": "最近 {count} 个批次（新的在前）。",
     "rerun": "重新运行",
     "success": "已成功解析 {count} 个文件",
@@ -201,6 +202,7 @@
   },
   "errors": {
     "addFiles": "请添加文件或文件夹以解析。",
+    "needOutputFolder": "请先选择输出文件夹。",
     "noSupported": "未找到支持的文件。",
     "parseFailed": "解析失败。",
     "parseCancelled": "已取消解析。",

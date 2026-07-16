@@ -103,7 +103,11 @@
 
   <div class="onboarding-content">
     {#if step === 1 && showInstallHint}
-      <div class="onboarding-step-panel" in:fade={{ duration: reducedMotion ? 0 : 200 }}>
+      <div
+        class="onboarding-step-panel"
+        in:fade={{ duration: reducedMotion ? 0 : 200 }}
+        out:fade={{ duration: reducedMotion ? 0 : 120 }}
+      >
         <div class="onboarding-header-group">
           <img class="onboarding-install-icon" src={appIcon} width="128" height="128" alt="" />
           <h1 class="onboarding-title">{t("onboarding.installTitle")}</h1>
@@ -153,7 +157,11 @@
         {/if}
       </div>
     {:else}
-      <div class="onboarding-step-panel" in:fade={{ duration: reducedMotion ? 0 : 200 }}>
+      <div
+        class="onboarding-step-panel"
+        in:fade={{ duration: reducedMotion ? 0 : 200 }}
+        out:fade={{ duration: reducedMotion ? 0 : 120 }}
+      >
         <div class="onboarding-header-group">
           <h1 class="onboarding-title">{t("onboarding.getStartedTitle")}</h1>
           <p class="onboarding-subtitle">{t("onboarding.getStartedSubtitle")}</p>

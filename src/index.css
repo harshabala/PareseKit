@@ -58,8 +58,12 @@
   --timing-normal: 180ms;
   --timing-slow: 260ms;
   --easing-standard: cubic-bezier(0.4, 0, 0.2, 1);
-  --easing-decelerate: cubic-bezier(0, 0, 0.2, 1);
-  --easing-accelerate: cubic-bezier(0.4, 0, 1, 1);
+  /* Strong ease-out — matches motion.ts easingDecelerate */
+  --easing-decelerate: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Alias decelerate so CSS exits stay responsive (no ease-in) */
+  --easing-accelerate: cubic-bezier(0.23, 1, 0.32, 1);
+  /* Optional morph-only curve (not wired to general UI) */
+  --easing-morph: cubic-bezier(0.77, 0, 0.175, 1);
 
   /* Motion panels: Svelte `fly` / `fade` in components; tokens mirror JS in lib/motion.ts */
   --motion-enter-y: 8px;
@@ -158,11 +162,12 @@
   }
 }
 
+/* PRM: short opacity/color ok; no transform/filter motion (gentler than hard-zero) */
 @media (prefers-reduced-motion: reduce) {
   :root {
-    --timing-fast: 0ms;
-    --timing-normal: 0ms;
-    --timing-slow: 0ms;
+    --timing-fast: 80ms;
+    --timing-normal: 100ms;
+    --timing-slow: 100ms;
   }
 
   *,
@@ -170,7 +175,8 @@
   *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    transition-property: opacity, color, background-color, border-color, box-shadow,
+      outline-color !important;
   }
 }
 
@@ -1345,8 +1351,9 @@ label {
   font-weight: 500;
   cursor: pointer;
   transition:
-    background-color var(--timing-fast) var(--easing-standard),
-    color var(--timing-fast) var(--easing-standard);
+    background-color var(--timing-fast) var(--easing-decelerate),
+    color var(--timing-fast) var(--easing-decelerate),
+    transform var(--timing-fast) var(--easing-decelerate);
   min-height: 32px;
   display: flex;
   align-items: center;
@@ -1362,12 +1369,14 @@ label {
   color: var(--accent-fg);
 }
 
-.segmented-control .segment:hover:not(.active) {
-  background: var(--secondary-bg);
+@media (hover: hover) and (pointer: fine) {
+  .segmented-control .segment:hover:not(.active) {
+    background: color-mix(in srgb, var(--accent-color) 10%, var(--secondary-bg));
+  }
 }
 
 .segmented-control .segment:active {
-  transform: none;
+  transform: scale(0.97);
 }
 
 .output-folder-path-text {
@@ -1400,6 +1409,10 @@ button.config-collapse-btn {
   cursor: pointer;
   line-height: 1.4;
   transform: none;
+  transition:
+    background-color var(--timing-fast) var(--easing-decelerate),
+    color var(--timing-fast) var(--easing-decelerate),
+    transform var(--timing-fast) var(--easing-decelerate);
 }
 
 button.config-collapse-btn:hover {
@@ -1412,7 +1425,7 @@ button.config-collapse-btn:hover {
 button.config-collapse-btn:active {
   background: color-mix(in srgb, var(--link-color, var(--accent-color)) 16%, transparent);
   box-shadow: none;
-  transform: none;
+  transform: scale(0.97);
 }
 
 button.config-collapse-btn:focus-visible {
@@ -1959,6 +1972,14 @@ button.config-collapse-btn:focus-visible {
   box-shadow: none;
 }
 
+.run-blocked-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  line-height: 1.35;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
 .icon-btn {
   background: transparent;
   border: 1px solid transparent;
@@ -2277,8 +2298,9 @@ button.config-collapse-btn:focus-visible {
   min-width: 32px;
   min-height: 32px;
   transition:
-    background-color var(--timing-fast) var(--easing-standard),
-    color var(--timing-fast) var(--easing-standard);
+    background-color var(--timing-fast) var(--easing-decelerate),
+    color var(--timing-fast) var(--easing-decelerate),
+    transform var(--timing-fast) var(--easing-decelerate);
 }
 
 .settings-back-btn:hover {
@@ -2289,9 +2311,8 @@ button.config-collapse-btn:focus-visible {
 .settings-back-btn:active {
   background: var(--secondary-bg);
   color: var(--accent-color);
-  transform: none;
+  transform: scale(0.97);
   box-shadow: none;
-  opacity: 0.85;
 }
 
 .settings-header-title {
@@ -2379,18 +2400,20 @@ button.config-collapse-btn:focus-visible {
   box-shadow: none;
   min-width: auto;
   transition:
-    background-color var(--timing-fast) var(--easing-standard),
-    border-color var(--timing-fast) var(--easing-standard);
+    background-color var(--timing-fast) var(--easing-decelerate),
+    border-color var(--timing-fast) var(--easing-decelerate),
+    transform var(--timing-fast) var(--easing-decelerate);
 }
 
-.settings-link-card:hover {
-  background: color-mix(in srgb, var(--secondary-bg) 85%, var(--accent-color));
-  border-color: color-mix(in srgb, var(--accent-color) 35%, var(--border-color));
+@media (hover: hover) and (pointer: fine) {
+  .settings-link-card:hover {
+    background: color-mix(in srgb, var(--secondary-bg) 85%, var(--accent-color));
+    border-color: color-mix(in srgb, var(--accent-color) 35%, var(--border-color));
+  }
 }
 
 .settings-link-card:active {
-  transform: none;
-  opacity: 0.9;
+  transform: scale(0.98);
 }
 
 .settings-link-text {

@@ -96,6 +96,8 @@ describe("keyboard / light motion helpers", () => {
     expect(enter.duration).toBe(MOTION_ENTER_MS);
     expect(exit.duration).toBe(MOTION_EXIT_MS);
     expect(enter).not.toHaveProperty("y");
-    expect(collapseFadeIn(true).duration).toBe(0);
+    // PRM keeps a short opacity crossfade (gentler than hard-zero)
+    expect(collapseFadeIn(true).duration).toBe(80);
+    expect(collapseFadeOut(true).duration).toBe(60);
   });
 });

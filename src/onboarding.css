@@ -155,8 +155,8 @@ body[data-window="onboarding"] #app {
   background: var(--onboarding-text-tertiary);
   opacity: 0.35;
   transition:
-    opacity var(--timing-normal, 180ms) var(--easing-decelerate, cubic-bezier(0, 0, 0.2, 1)),
-    transform var(--timing-normal, 180ms) var(--easing-decelerate, cubic-bezier(0, 0, 0.2, 1));
+    opacity var(--timing-normal, 180ms) var(--easing-decelerate, cubic-bezier(0.23, 1, 0.32, 1)),
+    transform var(--timing-normal, 180ms) var(--easing-decelerate, cubic-bezier(0.23, 1, 0.32, 1));
 }
 
 .onboarding-progress-dot.active {
@@ -299,7 +299,7 @@ body[data-window="onboarding"] #app {
   border: 0.5px solid var(--onboarding-card-border);
   border-radius: var(--onboarding-radius-card);
   overflow: hidden;
-  animation: onboarding-fade-in 300ms cubic-bezier(0, 0, 0.2, 1) 200ms both;
+  animation: onboarding-fade-in 300ms cubic-bezier(0.23, 1, 0.32, 1) 200ms both;
 }
 
 .onboarding-code-toolbar {
@@ -497,8 +497,8 @@ body[data-window="onboarding"] #app {
   min-width: 160px;
   cursor: pointer;
   transition:
-    background 150ms cubic-bezier(0.4, 0, 0.2, 1),
-    transform 150ms cubic-bezier(0.4, 0, 0.2, 1);
+    background 150ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 150ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .onboarding-btn-primary:hover {
@@ -605,10 +605,14 @@ body[data-window="onboarding"] #app {
 @media (prefers-reduced-motion: reduce) {
   .onboarding-icon-img,
   .onboarding-arrow-col,
-  .onboarding-folder-icon,
-  .onboarding-code-card,
-  .onboarding-step-panel {
+  .onboarding-folder-icon {
     animation: none !important;
-    transition: none !important;
+  }
+
+  .onboarding-code-card,
+  .onboarding-step-panel,
+  .onboarding-progress-dot {
+    animation: none !important;
+    transition-property: opacity, color, background-color, border-color !important;
   }
 }

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { onMount, tick } from "svelte";
-  import { fade, fly, slide } from "svelte/transition";
+  import { onMount } from "svelte";
+  import { fade, fly } from "svelte/transition";
   import { prefersReducedMotion } from "svelte/motion";
   import { invoke } from "@tauri-apps/api/core";
   import { Command } from "@tauri-apps/plugin-shell";
@@ -28,10 +28,6 @@
   };
 
   const reducedMotion = $derived(prefersReducedMotion.current);
-  const listSlide = $derived({
-    duration: reducedMotion ? 0 : 200,
-    easing: easingDecelerate,
-  });
 
   let deps = $state<DepStatus[]>([]);
   let loading = $state(true);
@@ -80,14 +76,7 @@
       }
     }
 
-    if (!initial && deps.length > 0) {
-      listVisible = false;
-      await tick();
-      if (!reducedMotion) {
-        await new Promise((r) => setTimeout(r, 180));
-      }
-    }
-
+    // Recheck immediately — do not wait for exit animation (Emil: no delay for cosmetics).
     loading = true;
     try {
       const result = await invoke<DepStatus[]>("check_dependencies");
@@ -164,7 +153,11 @@
   {/if}
 
   {#if listVisible || !loading}
-    <ul class="deps-list" transition:slide={listSlide}>
+    <ul
+      class="deps-list"
+      in:fade={{ duration: reducedMotion ? 80 : 120 }}
+      out:fade={{ duration: reducedMotion ? 60 : 120 }}
+    >
       <li
         class="deps-item deps-item-installed"
         aria-label={depRowAriaLabel(

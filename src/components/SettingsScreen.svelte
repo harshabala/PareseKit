@@ -23,6 +23,7 @@
     keyboardEventToShortcut,
   } from "../lib/globalShortcut";
   import { setSetting } from "../lib/store";
+  import { focusTrap } from "../lib/focusTrap";
 
   let {
     locale: localeValue,
@@ -211,7 +212,13 @@
 
 <svelte:window onkeydown={handleKeydown} />
 
-<div class="settings-screen" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+<div
+  class="settings-screen"
+  role="dialog"
+  aria-modal="true"
+  aria-labelledby="settings-title"
+  use:focusTrap={{ restoreFocus: false }}
+>
   <div class="settings-header">
     <button type="button" class="settings-back-btn" onclick={handleBack}>{t("settings.back")}</button>
     <span class="settings-header-title" id="settings-title">{t("settings.title")}</span>
