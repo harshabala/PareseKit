@@ -3,6 +3,7 @@
   import { fade } from "svelte/transition";
   import { prefersReducedMotion } from "svelte/motion";
   import { invoke } from "@tauri-apps/api/core";
+  import FilePlusIcon from "phosphor-svelte/lib/FilePlusIcon";
   import { hintFadeIn, hintFadeOut } from "../lib/motion";
   import { getCurrentWindow } from "@tauri-apps/api/window";
   import { t } from "../lib/i18n.svelte";
@@ -131,10 +132,7 @@
 
 <div class="drop-zone" class:drag-over={dragOver} class:drop-zone-busy={scanning || disabled}>
   <div class="drop-zone-icon" aria-hidden="true">
-    <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="8" y="6" width="24" height="28" rx="3" stroke="currentColor" stroke-width="1.5"/>
-      <path d="M20 14v10M15 19h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-    </svg>
+    <FilePlusIcon size={40} weight="duotone" />
   </div>
   <p class="drop-zone-title">{t("dropzone.title")}</p>
   {#key scanning}

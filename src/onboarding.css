@@ -388,10 +388,20 @@ body[data-window="onboarding"] #app {
 
 .onboarding-info-icon {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
   margin-top: 2px;
   color: var(--onboarding-text-tertiary);
+  line-height: 0;
+}
+
+.onboarding-step-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .onboarding-info-title {

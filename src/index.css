@@ -1622,9 +1622,13 @@ button.config-collapse-btn:focus-visible {
   animation: deps-badge-pop var(--motion-deps-pop) var(--easing-decelerate) var(--deps-pop-delay, 0ms) both;
 }
 
-.deps-check-icon {
+.deps-check-icon,
+.deps-missing-icon {
   display: block;
   flex-shrink: 0;
+}
+
+.deps-status-installed .deps-check-icon {
   animation: deps-check-draw 0.16s var(--easing-decelerate) calc(var(--deps-pop-delay, 0ms) + 60ms) both;
 }
 
@@ -2520,15 +2524,22 @@ button.about-author-link:focus-visible {
 
 .settings-section-icon {
   flex-shrink: 0;
-  width: 14px;
-  height: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
   color: var(--text-secondary);
-  display: block;
+  line-height: 0;
 }
 
 .settings-section-heading .settings-section-icon,
 .settings-link-with-icon .settings-section-icon {
-  opacity: 0.9;
+  opacity: 0.92;
+}
+
+.settings-section-icon :global(svg) {
+  display: block;
 }
 
 .settings-group .settings-toggle-stack {

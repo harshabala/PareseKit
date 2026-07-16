@@ -2,6 +2,8 @@
   import { fade } from "svelte/transition";
   import { prefersReducedMotion } from "svelte/motion";
   import { invoke } from "@tauri-apps/api/core";
+  import InfoIcon from "phosphor-svelte/lib/InfoIcon";
+  import CheckIcon from "phosphor-svelte/lib/CheckIcon";
   import { t } from "../lib/i18n.svelte";
   import { hintFadeIn, hintFadeOut } from "../lib/motion";
   import appIcon from "../assets/app-icon.png";
@@ -159,7 +161,13 @@
 
         <ol class="onboarding-steps-list">
           <li class:done={step1Done}>
-            <span class="onboarding-step-badge">{step1Done ? "✓" : "1"}</span>
+            <span class="onboarding-step-badge" aria-hidden="true">
+              {#if step1Done}
+                <CheckIcon size={12} weight="bold" />
+              {:else}
+                1
+              {/if}
+            </span>
             <div class="onboarding-step-content">
               <span>{t("onboarding.stepOutput")}</span>
               {#if !step1Done}
@@ -170,7 +178,13 @@
             </div>
           </li>
           <li class:done={step2Done}>
-            <span class="onboarding-step-badge">{step2Done ? "✓" : "2"}</span>
+            <span class="onboarding-step-badge" aria-hidden="true">
+              {#if step2Done}
+                <CheckIcon size={12} weight="bold" />
+              {:else}
+                2
+              {/if}
+            </span>
             <span>{t("onboarding.stepFiles")}</span>
           </li>
           <li>
@@ -180,13 +194,9 @@
         </ol>
 
         <div class="onboarding-info-card">
-          <svg class="onboarding-info-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-            <path
-              fill-rule="evenodd"
-              d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-              clip-rule="evenodd"
-            />
-          </svg>
+          <span class="onboarding-info-icon" aria-hidden="true">
+            <InfoIcon size={20} weight="duotone" />
+          </span>
           <div>
             <p class="onboarding-info-title">{t("onboarding.fileSupportTitle")}</p>
             <p class="onboarding-info-body">{t("onboarding.fileSupportBody")}</p>

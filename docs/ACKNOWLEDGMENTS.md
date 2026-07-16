@@ -17,7 +17,7 @@ This is a credit line in the docs, not a claim that any AI vendor ships or endor
 
 See [NOTICE.md](../NOTICE.md) for LiteParse, Tauri, Svelte, and bundled fonts.
 
-Settings section icons are monochrome stroke paths adapted from [Lucide Icons](https://lucide.dev) (ISC License).
+UI icons use the [Phosphor Icons](https://phosphoricons.com/) family via [`phosphor-svelte`](https://github.com/haruaki07/phosphor-svelte) (MIT). Same design system as `@phosphor-icons/react`, adapted for this Svelte app.
 
 ## GitHub contributors graph
 

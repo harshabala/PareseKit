@@ -4,6 +4,8 @@
   import { prefersReducedMotion } from "svelte/motion";
   import { invoke } from "@tauri-apps/api/core";
   import { Command } from "@tauri-apps/plugin-shell";
+  import CheckIcon from "phosphor-svelte/lib/CheckIcon";
+  import XIcon from "phosphor-svelte/lib/XIcon";
   import { takeCachedDependencies, type DepStatus } from "../lib/depsCache";
   import { t } from "../lib/i18n.svelte";
   import { depRowAriaLabel } from "../lib/depsAria";
@@ -179,15 +181,7 @@
             class="deps-status-badge deps-status-installed"
             aria-hidden="true"
           >
-            <svg class="deps-check-icon" width="11" height="11" viewBox="0 0 12 12" fill="none">
-              <path
-                d="M2.5 6.2 4.8 8.5 9.5 3.5"
-                stroke="currentColor"
-                stroke-width="1.6"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
+            <CheckIcon class="deps-check-icon" size={12} weight="bold" />
           </span>
           <div class="deps-item-copy">
             <span class="deps-item-label">{t("deps.pdf")}</span>
@@ -220,24 +214,9 @@
               aria-hidden="true"
             >
               {#if dep.installed}
-                <svg class="deps-check-icon" width="11" height="11" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M2.5 6.2 4.8 8.5 9.5 3.5"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  />
-                </svg>
+                <CheckIcon class="deps-check-icon" size={12} weight="bold" />
               {:else}
-                <svg class="deps-missing-icon" width="11" height="11" viewBox="0 0 12 12" fill="none">
-                  <path
-                    d="M3.2 3.2 8.8 8.8M8.8 3.2 3.2 8.8"
-                    stroke="currentColor"
-                    stroke-width="1.6"
-                    stroke-linecap="round"
-                  />
-                </svg>
+                <XIcon class="deps-missing-icon" size={12} weight="bold" />
               {/if}
             </span>
             <div class="deps-item-copy">
