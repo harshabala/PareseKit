@@ -17,6 +17,19 @@
   <a href="https://github.com/harshabala/parsekit/releases/latest">Releases</a>
 </p>
 
+## See it in action
+
+<table>
+  <tr>
+    <td width="50%"><img src="assets/screenshots/convert-files.png" alt="ParseKit conversion screen with local output settings, format selection, and file drop area"><br><sub>Convert files locally</sub></td>
+    <td width="50%"><img src="assets/screenshots/completed-batch.png" alt="ParseKit completed batch screen showing successful conversions"><br><sub>See completed batches</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="assets/screenshots/preferences.png" alt="ParseKit preferences for language, appearance, and automation"><br><sub>Make ParseKit yours</sub></td>
+    <td width="50%"><img src="assets/screenshots/file-support.png" alt="ParseKit file support settings showing PDF, LibreOffice, ImageMagick, and Tesseract OCR availability"><br><sub>Check file support</sub></td>
+  </tr>
+</table>
+
 ---
 
 ## What it does
