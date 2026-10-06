@@ -298,4 +298,16 @@ mod tests {
         #[cfg(target_os = "windows")]
         assert!(triple.contains("windows"), "{triple}");
     }
+
+    #[test]
+    fn resolve_sidecar_prefers_env_then_errors_if_missing() {
+        let prev = std::env::var("PARSEKIT_SIDECAR").ok();
+        std::env::set_var("PARSEKIT_SIDECAR", "/no/such/parsekit-sidecar-characterization");
+        let err = resolve_sidecar().unwrap_err();
+        assert!(err.contains("PARSEKIT_SIDECAR not found"), "{err}");
+        match prev {
+            Some(v) => std::env::set_var("PARSEKIT_SIDECAR", v),
+            None => std::env::remove_var("PARSEKIT_SIDECAR"),
+        }
+    }
 }

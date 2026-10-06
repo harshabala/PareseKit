@@ -270,4 +270,14 @@ mod tests {
         assert_eq!(file_type_from_path(Path::new("Report.PDF")), "pdf");
         assert_eq!(file_type_from_path(Path::new("noext")), "unknown");
     }
+
+    #[test]
+    fn once_lock_ratio_defaults_unknown_to_zero_and_stays_in_unit_interval() {
+        assert_eq!(avg_reduction_ratio("definitely-missing-type"), 0.0);
+        assert_eq!(avg_reduction_ratio(".PDF"), avg_reduction_ratio("pdf"));
+        for key in ["pdf", "docx", "xlsx", "pptx", "txt", "md"] {
+            let r = avg_reduction_ratio(key);
+            assert!((0.0..=1.0).contains(&r), "{key}={r}");
+        }
+    }
 }
